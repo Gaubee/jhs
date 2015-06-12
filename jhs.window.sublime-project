@@ -3,6 +3,9 @@
 	[
 		{
 			"path": "."
+		},
+		{
+			"path": "E:\\TEMP\\Javascript\\seajs-3.0.0"
 		}
 	]
 }

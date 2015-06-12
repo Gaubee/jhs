@@ -4,7 +4,7 @@
   "description": "静态文件服务器，专注渲染工作",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test1": "node tests/file_server.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/Gaubee/jhs/issues"
   },
-  "homepage": "https://github.com/Gaubee/jhs"
+  "homepage": "https://github.com/Gaubee/jhs",
+  "dependencies": {
+    "express": "^4.12.4",
+    "mime-types": "^2.1.1",
+    "path-to-regexp": "^1.2.0",
+    "sockjs-client": "^1.0.0",
+    "tldjs": "^1.5.2"
+  }
 }
