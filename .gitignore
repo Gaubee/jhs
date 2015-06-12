@@ -1,6 +1,7 @@
 # Logs
 logs
 *.log
+*.jhs.window.sublime-project
 
 # Runtime data
 pids

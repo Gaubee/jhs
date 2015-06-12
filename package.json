@@ -1,0 +1,19 @@
+{
+  "name": "jhs",
+  "version": "1.0.0",
+  "description": "静态文件服务器，专注渲染工作",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gaubee/jhs.git"
+  },
+  "author": "Gaubee",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gaubee/jhs/issues"
+  },
+  "homepage": "https://github.com/Gaubee/jhs"
+}
