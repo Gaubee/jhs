@@ -52,7 +52,11 @@ for (var _handle_name in cache) {
  * 核心监听转发器
  */
 jhs.all("*", function(req, res, next) {
-	var referer = req.header("referer") || "";
+	// console.log(req.headers);
+	var referer = req.header("referer");
+	if (!referer) {
+		referer = "http://" + req.header("host") + "/";
+	}
 	http_header = referer.indexOf("https://") === 0 ? "https://" : "http://"
 	var host = referer.replace(http_header, "").split("/")[0];
 	if (host) {
@@ -62,10 +66,11 @@ jhs.all("*", function(req, res, next) {
 		host.replace(http_header, "");
 	}
 	var domain = tld.getDomain(origin) || "";
+	req.headers["referer"] = referer;
 	req.headers["origin"] = origin;
-	req.headers["host"] = host;
 	req.headers["domain"] = domain;
-	req.headers["protocol"] = http_header.replace("//", "");
+	req.headers["protocol"] = http_header.replace("://", "");
+	jhs.emit("before_filter", req, res);
 	jhs.emit_filter(req.path, req, res, function() {
 		res.end(res.body || "");
 	});
@@ -76,27 +81,21 @@ jhs.all("*", function(req, res, next) {
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _abs_file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
+	console.log(_abs_file_path);
 	res.set('Content-Type', mime.contentType(type));
+	console.log(type, mime.contentType(type));
 	if (fs.existsSync(_abs_file_path)) {
 		res.body = cache.getFileCache(_abs_file_path);
 	} else {
 		res.set('Content-Type', mime.contentType("html"));
 		res.status(404);
-		var _abs_404_path = path.normalize("/" + (jhs.options.index || "404.html"));
+		var _abs_404_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options.index || "404.html"));
 		if (fs.existsSync(_abs_file_path)) {
 			res.body = cache.getFileCache(_abs_file_path);
 		} else {
 			res.body = _404file;
 		}
 	}
-	try {} catch (e) { //404
-		try {
-			res.body = cache.getFileCache();
-		} catch (e) {
-			console.error(e)
-		}
-	}
-	return true; //继续遍历
 });
 
 //index file
