@@ -1,4 +1,6 @@
+require("./lib/global")
 var express = require("express");
+var compression = require('compression');
 var filter = require("./lib/filter");
 var cache = require("./lib/cache");
 var fs = require("fs");
@@ -6,7 +8,11 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
-var _404file = cache.getFileCache(__dirname + "/404.html");
+var _404file = cache.getFileCacheContent(__dirname + "/404.html");
+/*
+ * 初始化
+ */
+jhs.use(compression());
 
 /*
  * 配置
@@ -52,7 +58,6 @@ for (var _handle_name in cache) {
  * 核心监听转发器
  */
 jhs.all("*", function(req, res, next) {
-	// console.log(req.headers);
 	var referer = req.header("referer");
 	if (!referer) {
 		referer = "http://" + req.header("host") + "/";
@@ -68,11 +73,16 @@ jhs.all("*", function(req, res, next) {
 	var domain = tld.getDomain(origin) || "";
 	req.headers["referer"] = referer;
 	req.headers["origin"] = origin;
+	req.headers["referer-host"] = host;
 	req.headers["domain"] = domain;
 	req.headers["protocol"] = http_header.replace("://", "");
 	jhs.emit("before_filter", req, res);
 	jhs.emit_filter(req.path, req, res, function() {
-		res.end(res.body || "");
+		if (res._manual_end) {
+			console.log("发送源文件被拦截");
+		} else {
+			res.end(res.body || "");
+		}
 	});
 });
 /*
@@ -81,28 +91,41 @@ jhs.all("*", function(req, res, next) {
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _abs_file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
+	var filename = "";
+	var basename = "";
+	var extname = "";
 	console.log(_abs_file_path);
 	res.set('Content-Type', mime.contentType(type));
-	console.log(type, mime.contentType(type));
 	if (fs.existsSync(_abs_file_path)) {
-		res.body = cache.getFileCache(_abs_file_path);
+		res.body = cache.getFileCacheContent(_abs_file_path);
+		extname = path.extname(_abs_file_path);
+		filename = path.basename(_abs_file_path);
+		basename = path.basename(filename, extname);
 	} else {
 		res.set('Content-Type', mime.contentType("html"));
 		res.status(404);
-		var _abs_404_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options.index || "404.html"));
-		if (fs.existsSync(_abs_file_path)) {
-			res.body = cache.getFileCache(_abs_file_path);
+		var _abs_404_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
+		if (fs.existsSync(_abs_404_path)) {
+			res.body = cache.getFileCacheContent(_abs_404_path);
+			extname = path.extname(_abs_404_path);
+			filename = path.basename(_abs_404_path);
+			basename = path.basename(filename, extname);
 		} else {
 			res.body = _404file;
 		}
 	}
+	res.body = res.body.replaceAll("__pathname", pathname)
+		.replaceAll("__filename", filename)
+		.replaceAll("__basename", basename)
+		.replaceAll("__extname", extname)
 });
 
 //index file
 jhs.filter("/", function(pathname, params, req, res) {
 	jhs.emit_filter(path.normalize("/" + (jhs.options.index || "index.html")), req, res, function() {
-		res.end(res.body || "");
+		!res._manual_end && res.end(res.body || "");
 	});
 });
+
 
 module.exports = jhs;

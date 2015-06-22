@@ -4,8 +4,80 @@
 		"selected_items":
 		[
 			[
-				"p",
+				"w",
+				"write"
+			],
+			[
+				"on",
+				"once"
+			],
+			[
+				"err",
+				"errorMsg"
+			],
+			[
+				"res",
+				"response_id"
+			],
+			[
+				"ser",
+				"_server_host"
+			],
+			[
+				"_ser",
+				"_server_port"
+			],
+			[
+				"json",
+				"json_str"
+			],
+			[
+				"bod",
+				"body_ma5"
+			],
+			[
+				"md",
+				"md5_map"
+			],
+			[
+				"pa",
 				"path"
+			],
+			[
+				"t",
+				"tmp1"
+			],
+			[
+				"p",
+				"per_build_info"
+			],
+			[
+				"re",
+				"replace"
+			],
+			[
+				"get",
+				"getFileCache"
+			],
+			[
+				"req",
+				"require"
+			],
+			[
+				"_han",
+				"_handle_name"
+			],
+			[
+				"c",
+				"cache"
+			],
+			[
+				"sta",
+				"state_2"
+			],
+			[
+				"stat",
+				"state_1"
 			],
 			[
 				"l",
@@ -88,10 +160,6 @@
 				"body"
 			],
 			[
-				"req",
-				"request"
-			],
-			[
 				"Bu",
 				"BusSpaceCon"
 			],
@@ -148,10 +216,6 @@
 				"mail"
 			],
 			[
-				"get",
-				"getInstance"
-			],
-			[
 				"d",
 				"db"
 			],
@@ -160,20 +224,12 @@
 				"vcode"
 			],
 			[
-				"c",
-				"config"
-			],
-			[
 				"bus_",
 				"bus_info"
 			],
 			[
 				"for",
 				"forEach"
-			],
-			[
-				"re",
-				"result"
 			],
 			[
 				"co",
@@ -283,58 +339,47 @@
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 1331,
+				"buffer_size": 4399,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "lib/cache.js",
+			"file": "server.js",
 			"settings":
 			{
-				"buffer_size": 577,
+				"buffer_size": 2853,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "lib/filter.js",
+			"file": "config.js",
 			"settings":
 			{
-				"buffer_size": 2154,
+				"buffer_size": 3185,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "tests/test_filter.js",
+			"file": "/D/nginx-1.7.9/conf/nginx.conf",
 			"settings":
 			{
-				"buffer_size": 305,
+				"buffer_size": 7325,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "tests/test_listen.js",
+			"file": "tests/test_nunjucks.js",
 			"settings":
 			{
-				"buffer_size": 167,
+				"buffer_size": 1000,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "tests/www/template.html",
+			"file": "node_modules/nunjucks/index.js",
 			"settings":
 			{
-				"buffer_size": 17,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "var jhs = require(\"../index\");\njhs.all(\"*.html\", function(req, res, next) {\n\n});",
-			"file": "tests/test_server.js",
-			"file_size": 83,
-			"file_write_time": 130785626240547730,
-			"settings":
-			{
-				"buffer_size": 80,
+				"buffer_size": 0,
 				"line_ending": "Windows"
 			}
 		}
@@ -371,7 +416,7 @@
 	"command_palette":
 	{
 		"height": 392.0,
-		"last_filter": "js",
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -411,7 +456,7 @@
 				"View: Toggle Status Bar"
 			]
 		],
-		"width": 400.0
+		"width": 464.0
 	},
 	"console":
 	{
@@ -432,18 +477,45 @@
 	},
 	"expanded_folders":
 	[
-		"/E/Git/jhs",
-		"/E/Git/jhs/node_modules/express",
-		"/E/Git/jhs/node_modules/express/node_modules/path-to-regexp",
-		"/E/Git/jhs/node_modules/express/node_modules/serve-static",
-		"/E/Git/jhs/node_modules/path-to-regexp",
-		"/E/Git/jhs/tests",
-		"/E/Git/jhs/tests/www"
+		"/E/Git/jhs"
 	],
 	"file_history":
 	[
-		"/E/Git/jhs/tests/www/index.html",
+		"/E/Git/jhs/node_modules/tldjs/README.md",
+		"/E/Git/jhs/node_modules/nunjucks/src/lib.js",
+		"/E/Git/jhs/lib/global/$.Object.js",
+		"/E/Git/jhs/lib/global/Tools.js",
+		"/E/Git/jhs/lib/global/exports.js",
+		"/E/Git/jhs/lib/cache.js",
 		"/D/nginx-1.7.9/conf/nginx.conf",
+		"/E/Git/jhs/node_modules/nunjucks/src/compiler.js",
+		"/E/Git/jhs/tests/test_nunjucks.js",
+		"/E/Git/jhs/tests/test_ejs.js",
+		"/E/Git/jhs/lib/global/package.json",
+		"/E/Git/sj/global/exports.js",
+		"/E/Git/jhs/node_modules/nunjucks/src/node-loaders.js",
+		"/E/Git/jhs/node_modules/nunjucks/src/environment.js",
+		"/E/TEMP/macro/MobaXterm Macros.mxtmacros",
+		"/E/Git/jhs/node_modules/ejs/lib/ejs.js",
+		"/E/Git/jhs/node_modules/ejs/ejs.js",
+		"/E/Git/jhs/node_modules/ejs/ejs.min.js",
+		"/E/Git/jhs/node_modules/express/node_modules/parseurl/README.md",
+		"/C/Users/Gaubee/AppData/Roaming/Tencent/TGP/install.log",
+		"/C/Users/Gaubee/AppData/Roaming/Tencent/TGP/login_pic/2865225033",
+		"/C/Users/Gaubee/AppData/Roaming/Tencent/TGP/login_pic/2865225033.ttd",
+		"/E/Git/jhs/404.html",
+		"/E/Git/jhs/tests/test_filter.js",
+		"/E/Git/jhs/tests/www/template.html",
+		"/E/Git/jhs/node_modules/express/node_modules/accepts/node_modules/mime-types/node_modules/mime-db/db.json",
+		"/E/Git/jhs/node_modules/express/node_modules/accepts/HISTORY.md",
+		"/E/Git/jhs/node_modules/express/History.md",
+		"/E/Git/jhs/tests/www/js/main.js",
+		"/E/Git/jhs/tests/www/js/class/Cat.js",
+		"/E/Git/jhs/tests/test_server.js",
+		"/E/Git/jhs/tests/test_cache.js",
+		"/E/Git/jhs/lib/filter.js",
+		"/E/Git/jhs/tests/test_listen.js",
+		"/E/Git/jhs/tests/www/index.html",
 		"/E/Git/jhs/tests/test_event.js",
 		"/E/Git/jhs/node_modules/express/lib/router/route.js",
 		"/E/Git/jhs/lib/event.js",
@@ -536,40 +608,7 @@
 		"/E/kp2/O2O_front_end_lib/js/require.config.v2.js",
 		"/E/kp2/O2O_front_end_lib/js/lib/moment.min.js",
 		"/E/kp2/O2O_fontend/public/js/pages/pay.js",
-		"/E/kp2/O2O_front_end_lib/template/css/xmp.customTag.css",
-		"/E/kp2/O2O_front_end_lib/template/js/xmp.customTag.js",
-		"/E/kp2/O2O_front_end_lib/template/xmp.model.html",
-		"/E/kp2/O2O_front_end_lib/template/xmp.customTag.html",
-		"/E/kp2/O2O_front_end_lib/template/js/xmp.model.js",
-		"/E/Git/O2O/server/RESTAPI/admin.bus.rest.js",
-		"/E/Git/O2O/server/RESTAPI/qiniu.rest.js",
-		"/E/kp2/O2O_fontend/public/js/pages/_core.js",
-		"/E/Git/O2O/core/bus/skill.extend.theme.js",
-		"/E/Git/O2O/core/league/admin.skill.js",
-		"/E/Git/O2O/server/RESTAPI/short.rest.js",
-		"/E/Git/O2O/server/RESTAPI/config.template/config.base.template.js",
-		"/E/Git/O2O/core/user/_con.js",
-		"/E/Git/O2O/middleware/bus.on.js",
-		"/E/Git/O2O/core/goods/skill.buff.js",
-		"/E/Git/O2O/core/user/skill.extend.bina.js",
-		"/E/kp2/dotnarAdmin/public/pages/admin/orders.html",
-		"/E/Git/O2O/core/recommender/_con.js",
-		"/E/kp2/dotnar_mall/js/pages/index.js",
-		"/E/kp2/dotnar_mall/js/pages/index_brank.js",
-		"/E/kp2/dotnar_mall/pages/index_shop_type_all.html",
-		"/E/kp2/dotnar_mall/index.html",
-		"/E/kp2/dotnar_mall/js/main.js",
-		"/E/kp2/dotnar_mall/pages/index_brank.html",
-		"/E/kp2/dotnar_mall/pages/index_seckill.html",
-		"/E/kp2/dotnar_mall/jb/index_seckill.js",
-		"/E/kp2/dotnar_mall/js/pages/index_seckill.js",
-		"/E/kp2/dotnar_mall/jb/index.js",
-		"/E/kp2/dotnar_mall/css/all.css",
-		"/E/kp2/dotnar_mall/pages/index.html",
-		"/E/kp2/dotnar_mall/pages/_header.html",
-		"/E/kp2/dotnar_mall/pages/dotnar/_right.html",
-		"/E/kp2/dotnar_mall/pages/dotnar/_footer.html",
-		"/E/kp2/dotnar_mall/pages/dotnar/_header.html"
+		"/E/kp2/O2O_front_end_lib/template/css/xmp.customTag.css"
 	],
 	"find":
 	{
@@ -580,6 +619,8 @@
 		"height": 90.0,
 		"where_history":
 		[
+			"E:\\Git\\jhs\\node_modules\\nunjucks\\src",
+			"E:\\Git\\jhs\\node_modules\\express",
 			"E:\\Git\\jhs\\node_modules\\express\\lib",
 			"E:\\Git\\O2O\\middleware",
 			"E:\\Git\\O2O\\core",
@@ -598,6 +639,61 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"\\",
+			"env",
+			" ",
+			".compile",
+			"compile",
+			"$",
+			"conn",
+			"conn.client_id",
+			"write",
+			"res",
+			"app.server_socket",
+			"server_socket",
+			"_server_host",
+			"= ",
+			"= ?",
+			"_server_port",
+			"setUnEnum",
+			"ready",
+			"delaySetCache",
+			"watch",
+			"_compile",
+			"data",
+			"setInterval",
+			"setTimeout",
+			"_compile",
+			"Templa",
+			"-",
+			" ",
+			"Template",
+			"template",
+			"Template",
+			"compile",
+			". ",
+			"console",
+			"sub_domain",
+			"\\",
+			"lib",
+			"api",
+			"getSubDomain",
+			"\\",
+			"\"/\"",
+			"_filter_html",
+			".use",
+			"define",
+			"populateMaps",
+			"mime",
+			"mime-types",
+			"mime",
+			"	",
+			"_filter_html",
+			"file_cache_time",
+			"readFileSync",
+			"!!",
+			"lstatSync",
+			"response_content",
 			"last_",
 			"path",
 			"emit_filter",
@@ -670,62 +766,7 @@
 			"bus.space",
 			"goods",
 			"busGuide",
-			"state",
-			"use_state",
-			"type",
-			"BusCon",
-			"select_result",
-			"_new_optionContainer_innerHTML",
-			"debugger",
-			"$Cache.bus.space.new_seat.",
-			"name",
-			"space_seat",
-			"info.express_info.company",
-			"BS_",
-			"_con",
-			"bus_ach_controller",
-			"e_list",
-			"商家·",
-			"var bus = role.getBus(this);",
-			"/list",
-			"type",
-			"find_by_id",
-			"TYPE",
-			"type",
-			"is_use_able",
-			":",
-			"10",
-			"、",
-			"座位",
-			"name",
-			"length",
-			"y",
-			"	",
-			"（1）	",
-			"x",
-			"busGuide",
-			"zoom",
-			"ol交易完成",
-			"交易完成",
-			"bus_ach_controller.custom_cash",
-			"未收货未付款_to_交易完成",
-			"交易完成_to_已评价",
-			"未收货未付款_to_交易完成",
-			"changeAble",
-			"first_acc",
-			"first",
-			"this",
-			"consol",
-			"_rate",
-			"rate",
-			"first_rate",
-			"second",
-			"first",
-			"_formatBinaBuffConfig",
-			"change",
-			"2\"",
-			"first",
-			"byId"
+			"state"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -743,7 +784,7 @@
 	"groups":
 	[
 		{
-			"selected": 5,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -752,15 +793,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1331,
+						"buffer_size": 4399,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								856,
-								836
+								3124,
+								3124
 							]
 						],
 						"settings":
@@ -770,32 +811,121 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 204.0,
+						"translation.y": 561.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "lib/cache.js",
+					"file": "server.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 577,
+						"buffer_size": 2853,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								532,
-								532
+								2576,
+								2579
 							]
 						],
 						"settings":
 						{
 							"open_with_edit": true,
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "config.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3185,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2584,
+								2584
+							]
+						],
+						"settings":
+						{
+							"open_with_edit": true,
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1428.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/D/nginx-1.7.9/conf/nginx.conf",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 7325,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6658,
+								6664
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3037.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "tests/test_nunjucks.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1000,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								265,
+								222
+							]
+						],
+						"settings":
+						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
@@ -807,146 +937,27 @@
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "lib/filter.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2154,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								43,
-								43
-							]
-						],
-						"settings":
-						{
-							"open_with_edit": true,
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "tests/test_filter.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 305,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								145,
-								145
-							]
-						],
-						"settings":
-						{
-							"open_with_edit": true,
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "tests/test_listen.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 167,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								70,
-								70
-							]
-						],
-						"settings":
-						{
-							"open_with_edit": true,
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
 					"buffer": 5,
-					"file": "tests/www/template.html",
+					"file": "node_modules/nunjucks/index.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 17,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								17,
-								17
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"open_with_edit": true,
-							"syntax": "Packages/HTML/HTML.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "tests/test_server.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 80,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								76,
-								76
-							]
-						],
-						"settings":
-						{
-							"open_with_edit": true,
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -960,7 +971,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 25.0
+		"height": 34.0
 	},
 	"input":
 	{
@@ -991,7 +1002,7 @@
 	"menu_visible": true,
 	"output.exec":
 	{
-		"height": 256.0
+		"height": 197.0
 	},
 	"output.find_results":
 	{
@@ -1010,6 +1021,10 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"node_modules/nunjucks/src/lib",
+				"jhs\\node_modules\\nunjucks\\src\\lib.js"
+			],
 			[
 				"configrest",
 				"O2O\\server\\RESTAPI\\config.rest.js"
@@ -1467,7 +1482,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 259.0,
+	"side_bar_width": 175.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
