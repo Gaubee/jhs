@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"ex",
+				"extname"
+			],
+			[
+				"pa",
+				"path"
+			],
+			[
+				"repla",
+				"replaceAll"
+			],
+			[
+				"re",
+				"replaceAll"
+			],
+			[
 				"w",
 				"write"
 			],
@@ -40,20 +56,12 @@
 				"md5_map"
 			],
 			[
-				"pa",
-				"path"
-			],
-			[
 				"t",
 				"tmp1"
 			],
 			[
 				"p",
 				"per_build_info"
-			],
-			[
-				"re",
-				"replace"
 			],
 			[
 				"get",
@@ -86,10 +94,6 @@
 			[
 				"pat",
 				"pathname"
-			],
-			[
-				"ex",
-				"extend_args"
 			],
 			[
 				"han",
@@ -336,10 +340,18 @@
 	"buffers":
 	[
 		{
+			"file": "lib/cache.js",
+			"settings":
+			{
+				"buffer_size": 3419,
+				"line_ending": "Windows"
+			}
+		},
+		{
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 4399,
+				"buffer_size": 3560,
 				"line_ending": "Windows"
 			}
 		},
@@ -347,7 +359,7 @@
 			"file": "server.js",
 			"settings":
 			{
-				"buffer_size": 2853,
+				"buffer_size": 4512,
 				"line_ending": "Windows"
 			}
 		},
@@ -355,15 +367,7 @@
 			"file": "config.js",
 			"settings":
 			{
-				"buffer_size": 3185,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/D/nginx-1.7.9/conf/nginx.conf",
-			"settings":
-			{
-				"buffer_size": 7325,
+				"buffer_size": 6156,
 				"line_ending": "Windows"
 			}
 		},
@@ -379,8 +383,8 @@
 			"file": "node_modules/nunjucks/index.js",
 			"settings":
 			{
-				"buffer_size": 0,
-				"line_ending": "Windows"
+				"buffer_size": 1920,
+				"line_ending": "Unix"
 			}
 		}
 	],
@@ -481,13 +485,15 @@
 	],
 	"file_history":
 	[
+		"/E/Git/jhs/lib/global/$.String.js",
+		"/D/nginx-1.7.9/conf/nginx.conf",
+		"/E/Git/jhs/node_modules/express/lib/response.js",
 		"/E/Git/jhs/node_modules/tldjs/README.md",
 		"/E/Git/jhs/node_modules/nunjucks/src/lib.js",
 		"/E/Git/jhs/lib/global/$.Object.js",
 		"/E/Git/jhs/lib/global/Tools.js",
 		"/E/Git/jhs/lib/global/exports.js",
 		"/E/Git/jhs/lib/cache.js",
-		"/D/nginx-1.7.9/conf/nginx.conf",
 		"/E/Git/jhs/node_modules/nunjucks/src/compiler.js",
 		"/E/Git/jhs/tests/test_nunjucks.js",
 		"/E/Git/jhs/tests/test_ejs.js",
@@ -606,9 +612,7 @@
 		"/E/kp2/O2O_fontend/public/pages/personal/collection.html",
 		"/E/kp2/O2O_front_end_lib/js/lib/tools.js",
 		"/E/kp2/O2O_front_end_lib/js/require.config.v2.js",
-		"/E/kp2/O2O_front_end_lib/js/lib/moment.min.js",
-		"/E/kp2/O2O_fontend/public/js/pages/pay.js",
-		"/E/kp2/O2O_front_end_lib/template/css/xmp.customTag.css"
+		"/E/kp2/O2O_front_end_lib/js/lib/moment.min.js"
 	],
 	"find":
 	{
@@ -639,6 +643,40 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"新版本前端",
+			"{\n",
+			"filename = path",
+			"\n		",
+			"_file_cahce_prefix_",
+			"getFileCache",
+			"cache",
+			"__",
+			"state",
+			"cache",
+			"var template_map = this.template_map;",
+			"template_map: Object.create(null),",
+			"template_map: {}",
+			"md5_map",
+			"html_filter_handle",
+			"getFileCache",
+			"replaceAll",
+			"index",
+			"_abs_404_path",
+			"_404file",
+			"status",
+			"res.body",
+			"before_filter",
+			"emit_filter",
+			"path",
+			"net",
+			"os",
+			"_404file",
+			"_server_port",
+			"_server_host",
+			"_404file",
+			"before_filter",
+			"服务器返回信息",
+			"nunjucks_env",
 			"\\",
 			"env",
 			" ",
@@ -732,41 +770,7 @@
 			"getDomainUrl",
 			"domainIdList",
 			"domain",
-			"white_list_map",
-			"nginx_config_file_template",
-			"$Cache.pay.space_seat.list",
-			"conns",
-			"connection_cache",
-			"setInfo",
-			"s_key_cache",
-			"notify.conns",
-			"notify",
-			"role",
-			"ach.pay_success",
-			"bus.updateSpace(",
-			"updateSpace",
-			"找不到指定空间",
-			" && ach.info.pay_method == midEvent.Class.Ach.METHOD.当面付款",
-			"midEvent.Class.Bus.get(bus_id);",
-			"hash_routie",
-			"update",
-			"eat_in_store",
-			"$Event.pays.change_space",
-			"change",
-			"_set_user_pay_ach",
-			"is_in_store",
-			"new_pay_method",
-			"ach_id",
-			"updateUserAddress",
-			"_updateUserAddress",
-			"csacacsas",
-			"csa",
-			"csacacsas",
-			"is_in_store",
-			"bus.space",
-			"goods",
-			"busGuide",
-			"state"
+			"white_list_map"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -784,54 +788,53 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "index.js",
+					"file": "lib/cache.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4399,
+						"buffer_size": 3419,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3124,
-								3124
+								1693,
+								1693
 							]
 						],
 						"settings":
 						{
-							"open_with_edit": true,
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 561.0,
+						"translation.y": 957.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "server.js",
+					"file": "index.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2853,
+						"buffer_size": 3560,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2576,
-								2579
+								3109,
+								3109
 							]
 						],
 						"settings":
@@ -841,27 +844,57 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1178.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "server.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4512,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2376,
+								2376
+							]
+						],
+						"settings":
+						{
+							"open_with_edit": true,
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2091.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
+					"buffer": 3,
 					"file": "config.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3185,
+						"buffer_size": 6156,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2584,
-								2584
+								4403,
+								4403
 							]
 						],
 						"settings":
@@ -871,40 +904,10 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 1428.0,
+						"translation.y": 918.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "/D/nginx-1.7.9/conf/nginx.conf",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 7325,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								6658,
-								6664
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 3037.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -933,7 +936,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
@@ -942,7 +945,7 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 0,
+						"buffer_size": 1920,
 						"regions":
 						{
 						},
@@ -963,7 +966,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 4,
 					"type": "text"
 				}
 			]
@@ -1482,7 +1485,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 175.0,
+	"side_bar_width": 196.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

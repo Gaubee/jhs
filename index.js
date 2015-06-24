@@ -90,34 +90,37 @@ jhs.all("*", function(req, res, next) {
  */
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
-	var _abs_file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
+	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
 	var filename = "";
 	var basename = "";
 	var extname = "";
-	console.log(_abs_file_path);
-	res.set('Content-Type', mime.contentType(type));
-	if (fs.existsSync(_abs_file_path)) {
-		res.body = cache.getFileCacheContent(_abs_file_path);
-		extname = path.extname(_abs_file_path);
-		filename = path.basename(_abs_file_path);
-		basename = path.basename(filename, extname);
-	} else {
-		res.set('Content-Type', mime.contentType("html"));
+	console.log(_file_path);
+
+	if (!fs.existsSync(_file_path)) {
 		res.status(404);
-		var _abs_404_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
-		if (fs.existsSync(_abs_404_path)) {
-			res.body = cache.getFileCacheContent(_abs_404_path);
-			extname = path.extname(_abs_404_path);
-			filename = path.basename(_abs_404_path);
-			basename = path.basename(filename, extname);
-		} else {
+		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
+		if (!fs.existsSync(_404file_path)) {
+			res.set('Content-Type', mime.contentType("html"));
 			res.body = _404file;
+			return;
 		}
+		_file_path = _404file_path;
 	}
-	res.body = res.body.replaceAll("__pathname", pathname)
-		.replaceAll("__filename", filename)
-		.replaceAll("__basename", basename)
-		.replaceAll("__extname", extname)
+
+	res.set('Content-Type', mime.contentType(type));
+	var fileInfo = cache.getFileCache(_file_path);
+	res.body = fileInfo.source_content;
+	extname = path.extname(_file_path);
+	filename = path.basename(_file_path);
+	basename = path.basename(filename, extname);
+
+	if (fileInfo.is_text) {
+		res.body = res.body.replaceAll("__pathname", pathname)
+			.replaceAll("__filename", filename)
+			.replaceAll("__basename", basename)
+			.replaceAll("__extname", extname);
+	}
+	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
 });
 
 //index file

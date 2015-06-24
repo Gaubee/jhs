@@ -5,7 +5,23 @@ var nunjucks = require("nunjucks");
 // var server_host = os.type() === "Linux" ? "api.dotnar.com" : "127.0.0.1";
 var app;
 var client_id = $$.uuid("CLIENT_"); //TCP数据的分割标识
-
+function _build_nunjucks(pathname) {
+	var nunjucks_env = nunjucks.configure(pathname, {
+		watch: false, //不配置的话，会导致watch文件而不结束进程
+		tags: {
+			blockStart: '<%',
+			blockEnd: '%>',
+			variableStart: '<$',
+			variableEnd: '$>',
+			commentStart: '<-#',
+			commentEnd: '#->'
+		},
+	});
+	nunjucks_env.addFilter('tojson', function(obj) {
+		return JSON.stringify(obj);
+	});
+	return nunjucks_env;
+};
 var config = {
 	onready: function(_app) {
 		app = _app;
@@ -77,28 +93,18 @@ var config = {
 		index: "main-beta.html",
 		template_map: Object.create(null),
 		md5_map: Object.create(null),
-		html_filter_handle: function(path, params, req, res) { //注入商家信息
+		nunjucks_env: _build_nunjucks("E:/kp2/O2O_fontend/public"),
+		html_filter_handle: function(pathname, params, req, res) { //注入商家信息
 			var body_ma5 = $$.md5(res.body);
 			var template_map = this.template_map;
 			var md5_map = this.md5_map;
-			if (md5_map[path] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
-				template_map[path] = null;
+			if (md5_map[pathname] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
+				template_map[pathname] = null;
 			}
 			//编译模板
-			var tmp = template_map[path];
+			var tmp = template_map[pathname];
 			if (!tmp) {
-				var nunjucks_env = nunjucks.configure(config.bus.root, {
-					watch: false, //不配置的话，会导致watch文件而不结束进程
-					tags: {
-						blockStart: '<%',
-						blockEnd: '%>',
-						variableStart: '<$',
-						variableEnd: '$>',
-						commentStart: '<-#',
-						commentEnd: '#->'
-					},
-				});
-				tmp = template_map[path] = nunjucks.compile(res.body, nunjucks_env);
+				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
 			}
 			//终止默认相应
 			res._manual_end = true;
@@ -124,37 +130,27 @@ var config = {
 		}
 	},
 	new_bus: {
-		root: "E:/kp2/新版本前端/dev-kit",
+		root: "E:/kp2/NEW_DOTNAR_FONTEND/dev-kit",
 		index: "app.html",
 		"404": "app.html", //错误页也自动导向主页，而后用JS进行动态加载404页面
 		template_map: Object.create(null),
 		md5_map: Object.create(null),
-		html_filter_handle: function(path, params, req, res) {
-			console.log(this.root + path, res.statusCode, fs.existsSync(this.root + "/app-pages" + path));
-			if (res.statusCode == 404 && fs.existsSync(this.root + "/app-pages" + path)) {
+		nunjucks_env: _build_nunjucks("E:/kp2/NEW_DOTNAR_FONTEND/dev-kit"),
+		html_filter_handle: function(pathname, params, req, res) {
+			console.log(this.root + pathname, res.statusCode, fs.existsSync(this.root + "/app-pages" + pathname));
+			if (res.statusCode == 404 && fs.existsSync(this.root + "/app-pages" + pathname)) {
 				res.status(200); //找得到，不是真正的404
 			}
 			var body_ma5 = $$.md5(res.body);
 			var template_map = this.template_map;
 			var md5_map = this.md5_map;
-			if (md5_map[path] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
-				template_map[path] = null;
+			if (md5_map[pathname] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
+				template_map[pathname] = null;
 			}
 			//编译模板
-			var tmp = template_map[path];
+			var tmp = template_map[pathname];
 			if (!tmp) {
-				var nunjucks_env = nunjucks.configure(config.new_bus.root, {
-					watch: false, //不配置的话，会导致watch文件而不结束进程
-					tags: {
-						blockStart: '<%',
-						blockEnd: '%>',
-						variableStart: '<$',
-						variableEnd: '$>',
-						commentStart: '<-#',
-						commentEnd: '#->'
-					},
-				});
-				tmp = template_map[path] = nunjucks.compile(res.body, nunjucks_env);
+				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
 			}
 			//终止默认相应
 			res._manual_end = true;
@@ -165,7 +161,7 @@ var config = {
 				type: "get-dotnar_render_data",
 				response_id: response_id,
 				host: req.headers["referer-host"],
-				data_list: ["appConfig", "busInfo", "loginUser"],
+				data_list: ["appConfig", "busInfo"],
 				cookie: req.headers["cookie"]
 			}));
 			//注册响应事件
@@ -180,7 +176,48 @@ var config = {
 		}
 	},
 	lib: {
-		root: "E:/kp2/O2O_front_end_lib"
+		root: "E:/kp2/O2O_front_end_lib",
+		template_map: Object.create(null),
+		md5_map: Object.create(null),
+		nunjucks_env: _build_nunjucks("E:/kp2/O2O_front_end_lib"),
+		common_filter_handle: function(pathname, params, req, res) {
+			// console.log("------\n",pathname, req.headers,"\n------");
+			res.header("Access-Control-Allow-Origin", "*");
+		},
+		html_filter_handle: function(pathname, params, req, res) { //注入配置信息
+			var body_ma5 = $$.md5(res.body);
+			var template_map = this.template_map;
+			var md5_map = this.md5_map;
+			if (md5_map[pathname] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
+				template_map[pathname] = null;
+			}
+			//编译模板
+			var tmp = template_map[pathname];
+			if (!tmp) {
+				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
+			}
+			//终止默认相应
+			res._manual_end = true;
+			//请求 配置信息、商家信息
+			var response_id = $$.uuid(); //响应标识
+			// console.log("cookie:", req.headers["cookie"]);
+			app.server_conn.send(JSON.stringify({
+				type: "get-dotnar_render_data",
+				response_id: response_id,
+				host: req.headers["referer-host"],
+				data_list: ["appConfigBase"],
+				cookie: req.headers["cookie"]
+			}));
+			//注册响应事件
+			app.once("res:" + response_id, function(error, resData) {
+				if (error) {
+					throw error;
+				}
+				// console.log(resData.data);
+				// console.log(res.body);
+				res.end(tmp.render(resData.data));
+			});
+		}
 	}
 };
 module.exports = config;

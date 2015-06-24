@@ -121,9 +121,17 @@ if (cluster.isMaster) {
 				console.log("服务器信息解析完成");
 				_link_server();
 			});
-			res.on("error", function() {
-				console.log("出错");
+			res.on("error", function(e) {
+				console.log("数据传输出错：", e.message);
+				if (!server_info) {
+					console.log("1s后尝试重新获取数据");
+					setTimeout(_get_server_info, 1000);
+				}
 			})
+		}).on("error", function(e) {
+			console.log("连接出错：", e.message);
+			console.log("1s后尝试重新获取数据");
+			setTimeout(_get_server_info, 1000);
 		});
 	};
 
@@ -137,7 +145,11 @@ if (cluster.isMaster) {
 			console.log("与服务器连接成功");
 			jhs.server_conn = socket_client;
 			jhs.emit("ready")
-		});
+		}).on("error", function(e) {
+			console.log("连接断开：", e.message);
+			console.log("1s后尝试重新获取数据并重新建立连接");
+			setTimeout(_get_server_info, 1000);
+		});;
 	}
 	_get_server_info();
 
