@@ -14,7 +14,7 @@ if (cluster.isMaster) {
 	var http = require("http");
 	var net = require("net");
 	var client = sjsc("http://dev.dotnar.com:3000/sock_notify");
-	var jhs = require("./index");
+	var jhs = require("../index");
 	var tld = require("tldjs");
 	var config = require("./config");
 
@@ -31,9 +31,9 @@ if (cluster.isMaster) {
 				jhs.options = config.admin;
 			} else if (_sub_domain === "lib") {
 				jhs.options = config.lib;
-			} else if (_sub_domain === "d3") {
+			}/* else if (_sub_domain === "d3") {
 				jhs.options = config.new_bus;
-			} else {
+			} */else {
 				jhs.options = config.bus;
 			}
 		} else {

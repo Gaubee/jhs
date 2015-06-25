@@ -5,6 +5,10 @@ var nunjucks = require("nunjucks");
 // var server_host = os.type() === "Linux" ? "api.dotnar.com" : "127.0.0.1";
 var app;
 var client_id = $$.uuid("CLIENT_"); //TCP数据的分割标识
+var is_dev = process.argv.indexOf("-dev") !== -1;
+console.log("is_dev:", is_dev);
+var base_config = is_dev ? require("./dev.config") : require("./product.config");
+
 function _build_nunjucks(pathname) {
 	var nunjucks_env = nunjucks.configure(pathname, {
 		watch: false, //不配置的话，会导致watch文件而不结束进程
@@ -79,63 +83,63 @@ var config = {
 			console.log("初始化连接成功");
 		});
 	},
-	domain: "dev-dotnar.com",
+	domain: base_config.domain,
 	www: {
-		root: "E:/kp2/dotnar/public",
+		root: base_config.www_root,
 		index: "dotnar.main.html"
 	},
 	admin: {
-		root: "E:/kp2/admin_dotnar/public",
+		root: base_config.admin_root,
 		index: "admin-beta.html"
 	},
+	// bus: {
+	// 	root: "E:/kp2/O2O_fontend/public",
+	// 	index: "main-beta.html",
+	// 	template_map: Object.create(null),
+	// 	md5_map: Object.create(null),
+	// 	nunjucks_env: _build_nunjucks("E:/kp2/O2O_fontend/public"),
+	// 	html_filter_handle: function(pathname, params, req, res) { //注入商家信息
+	// 		var body_ma5 = $$.md5(res.body);
+	// 		var template_map = this.template_map;
+	// 		var md5_map = this.md5_map;
+	// 		if (md5_map[pathname] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
+	// 			template_map[pathname] = null;
+	// 		}
+	// 		//编译模板
+	// 		var tmp = template_map[pathname];
+	// 		if (!tmp) {
+	// 			tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
+	// 		}
+	// 		//终止默认相应
+	// 		res._manual_end = true;
+	// 		//请求 配置信息、商家信息
+	// 		var response_id = $$.uuid(); //响应标识
+	// 		// console.log("cookie:", req.headers["cookie"]);
+	// 		app.server_conn.send(JSON.stringify({
+	// 			type: "get-dotnar_render_data",
+	// 			response_id: response_id,
+	// 			host: req.headers["referer-host"],
+	// 			data_list: ["appConfig", "busInfo", "loginUser"],
+	// 			cookie: req.headers["cookie"]
+	// 		}));
+	// 		//注册响应事件
+	// 		app.once("res:" + response_id, function(error, resData) {
+	// 			if (error) {
+	// 				throw error;
+	// 			}
+	// 			// console.log(resData.data);
+	// 			// console.log(res.body);
+	// 			res.end(tmp.render(resData.data));
+	// 		});
+	// 	}
+	// },
 	bus: {
-		root: "E:/kp2/O2O_fontend/public",
-		index: "main-beta.html",
-		template_map: Object.create(null),
-		md5_map: Object.create(null),
-		nunjucks_env: _build_nunjucks("E:/kp2/O2O_fontend/public"),
-		html_filter_handle: function(pathname, params, req, res) { //注入商家信息
-			var body_ma5 = $$.md5(res.body);
-			var template_map = this.template_map;
-			var md5_map = this.md5_map;
-			if (md5_map[pathname] !== body_ma5) { //MD5校验，如果文件已经发生改变，则清除模板重新编译
-				template_map[pathname] = null;
-			}
-			//编译模板
-			var tmp = template_map[pathname];
-			if (!tmp) {
-				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
-			}
-			//终止默认相应
-			res._manual_end = true;
-			//请求 配置信息、商家信息
-			var response_id = $$.uuid(); //响应标识
-			// console.log("cookie:", req.headers["cookie"]);
-			app.server_conn.send(JSON.stringify({
-				type: "get-dotnar_render_data",
-				response_id: response_id,
-				host: req.headers["referer-host"],
-				data_list: ["appConfig", "busInfo", "loginUser"],
-				cookie: req.headers["cookie"]
-			}));
-			//注册响应事件
-			app.once("res:" + response_id, function(error, resData) {
-				if (error) {
-					throw error;
-				}
-				// console.log(resData.data);
-				// console.log(res.body);
-				res.end(tmp.render(resData.data));
-			});
-		}
-	},
-	new_bus: {
-		root: "E:/kp2/NEW_DOTNAR_FONTEND/dev-kit",
+		root: base_config.bus_root,
 		index: "app.html",
 		"404": "app.html", //错误页也自动导向主页，而后用JS进行动态加载404页面
 		template_map: Object.create(null),
 		md5_map: Object.create(null),
-		nunjucks_env: _build_nunjucks("E:/kp2/NEW_DOTNAR_FONTEND/dev-kit"),
+		nunjucks_env: _build_nunjucks(base_config.bus_root),
 		html_filter_handle: function(pathname, params, req, res) {
 			console.log(this.root + pathname, res.statusCode, fs.existsSync(this.root + "/app-pages" + pathname));
 			if (res.statusCode == 404 && fs.existsSync(this.root + "/app-pages" + pathname)) {
@@ -176,10 +180,10 @@ var config = {
 		}
 	},
 	lib: {
-		root: "E:/kp2/O2O_front_end_lib",
+		root: base_config.lib_root,
 		template_map: Object.create(null),
 		md5_map: Object.create(null),
-		nunjucks_env: _build_nunjucks("E:/kp2/O2O_front_end_lib"),
+		nunjucks_env: _build_nunjucks(base_config.lib_root),
 		common_filter_handle: function(pathname, params, req, res) {
 			// console.log("------\n",pathname, req.headers,"\n------");
 			res.header("Access-Control-Allow-Origin", "*");

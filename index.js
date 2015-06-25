@@ -8,7 +8,7 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
-var _404file = cache.getFileCacheContent(__dirname + "/404.html");
+var _404file = cache.getFileCacheContent(__dirname + "/lib/404.html");
 /*
  * 初始化
  */
