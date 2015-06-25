@@ -9,11 +9,9 @@ if (cluster.isMaster) {
 		console.log('worker ' + worker.process.pid + ' died');
 	});
 } else {
-	var sjsc = require('sockjs-client');
 	var os = require("os");
 	var http = require("http");
 	var net = require("net");
-	var client = sjsc("http://dev.dotnar.com:3000/sock_notify");
 	var jhs = require("../index");
 	var tld = require("tldjs");
 	var config = require("./config");

@@ -115,10 +115,10 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	basename = path.basename(filename, extname);
 
 	if (fileInfo.is_text) {
-		res.body = res.body.replaceAll("__pathname", pathname)
-			.replaceAll("__filename", filename)
-			.replaceAll("__basename", basename)
-			.replaceAll("__extname", extname);
+		res.body = res.body.replaceAll("__pathname__", pathname)
+			.replaceAll("__filename__", filename)
+			.replaceAll("__basename__", basename)
+			.replaceAll("__extname__", extname);
 	}
 	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
 });
