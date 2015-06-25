@@ -1,8 +1,7 @@
 module.exports = {
-	"domain": "dev-dotnar.com"
-	"www_root": "E:/kp2/dotnar/public",
-	"admin_root": "E:/kp2/admin_dotnar/public",
-	// "bus_root": "E:/kp2/O2O_fontend/public",
-	"bus_root": "E:/kp2/NEW_DOTNAR_FONTEND/dev-kit",
-	"lib_root": "E:/kp2/O2O_front_end_lib"
+	"domain": "dotnar.com",
+	"www_root": "/usr/share/nginx/www/dotnar/public",
+	"admin_root": "/usr/share/nginx/www/dotnarAdmin/public",
+	"bus_root": "/usr/share/nginx/www/wz-dev-kit",
+	"lib_root": "/usr/share/nginx/www/O2O_front_end_lib"
 }
