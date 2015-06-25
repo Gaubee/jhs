@@ -1,4 +1,5 @@
 module.exports = {
+	"lib_url": "http://lib.dev-dotnar.com",
 	"domain": "dev-dotnar.com",
 	"www_root": "E:/kp2/dotnar/public",
 	"admin_root": "E:/kp2/admin_dotnar/public",

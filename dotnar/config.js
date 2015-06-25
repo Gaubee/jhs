@@ -27,6 +27,7 @@ function _build_nunjucks(pathname) {
 	return nunjucks_env;
 };
 var config = {
+	base_config: base_config,
 	onready: function(_app) {
 		app = _app;
 		var bufferList = [];

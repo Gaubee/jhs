@@ -1,4 +1,5 @@
 module.exports = {
+	"lib_url": "http://lib.dotnar.com",
 	"domain": "dotnar.com",
 	"www_root": "/usr/share/nginx/www/dotnar/public",
 	"admin_root": "/usr/share/nginx/www/dotnarAdmin/public",

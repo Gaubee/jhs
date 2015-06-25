@@ -29,9 +29,11 @@ if (cluster.isMaster) {
 				jhs.options = config.admin;
 			} else if (_sub_domain === "lib") {
 				jhs.options = config.lib;
-			}/* else if (_sub_domain === "d3") {
-				jhs.options = config.new_bus;
-			} */else {
+			}
+			/* else if (_sub_domain === "d3") {
+							jhs.options = config.new_bus;
+						} */
+			else {
 				jhs.options = config.bus;
 			}
 		} else {
@@ -78,7 +80,7 @@ if (cluster.isMaster) {
 		// res_body = res_body.replace(/\{\%([\W\w]+?)\%\}/g, function(s, key) {
 		// 	return data[key] || ""
 		// });
-		res.body = res_body.replaceAll("__dotnar_lib_base_url__", "http://lib.dev-dotnar.com");
+		res.body = res_body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url);
 
 		(jhs.options.html_filter_handle instanceof Function) && jhs.options.html_filter_handle(path, params, req, res);
 	});
