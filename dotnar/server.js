@@ -42,7 +42,7 @@ if (cluster.isMaster) {
 	});
 
 	var ID_MAP = {};
-
+	console.log("__dotnar_lib_base_url__", config.base_config.lib_url);
 	jhs.filter("*.html", function(path, params, req, res) {
 		if (res.statusCode == "404") {
 			console.log("找不到文件，触发404~");
