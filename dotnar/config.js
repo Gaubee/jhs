@@ -187,7 +187,6 @@ var config = {
 		nunjucks_env: _build_nunjucks(base_config.lib_root),
 		common_filter_handle: function(pathname, params, req, res) {
 			// console.log("------\n",pathname, req.headers,"\n------");
-			res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url);
 			res.header("Access-Control-Allow-Origin", "*");
 		},
 		html_filter_handle: function(pathname, params, req, res) { //注入配置信息

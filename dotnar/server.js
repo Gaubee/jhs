@@ -84,6 +84,10 @@ if (cluster.isMaster) {
 
 		(jhs.options.html_filter_handle instanceof Function) && jhs.options.html_filter_handle(path, params, req, res);
 	});
+	jhs.filter("*.js", function(path, params, req, res) {
+		res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url);
+		(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
+	});
 
 
 	/*
