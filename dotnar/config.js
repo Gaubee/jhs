@@ -6,7 +6,7 @@ var nunjucks = require("nunjucks");
 var app;
 var client_id = $$.uuid("CLIENT_"); //TCP数据的分割标识
 var is_dev = process.argv.indexOf("-dev") !== -1;
-console.log("is_dev:", is_dev);
+console.log(is_dev ? "开发模式" : "部署模式");
 var base_config = is_dev ? require("./dev.config") : require("./product.config");
 
 function _build_nunjucks(pathname) {
@@ -186,7 +186,6 @@ var config = {
 		md5_map: Object.create(null),
 		nunjucks_env: _build_nunjucks(base_config.lib_root),
 		common_filter_handle: function(pathname, params, req, res) {
-			// console.log("------\n",pathname, req.headers,"\n------");
 			res.header("Access-Control-Allow-Origin", "*");
 		},
 		html_filter_handle: function(pathname, params, req, res) { //注入配置信息

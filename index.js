@@ -91,9 +91,7 @@ jhs.all("*", function(req, res, next) {
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
-	var filename = "";
-	var basename = "";
-	var extname = "";
+
 	console.log(_file_path);
 
 	if (!fs.existsSync(_file_path)) {
@@ -110,15 +108,16 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	res.set('Content-Type', mime.contentType(type));
 	var fileInfo = cache.getFileCache(_file_path);
 	res.body = fileInfo.source_content;
-	extname = path.extname(_file_path);
-	filename = path.basename(_file_path);
-	basename = path.basename(filename, extname);
 
 	if (fileInfo.is_text) {
+		var extname = path.extname(_file_path);
+		var filename = path.basename(_file_path);
+		var basename = path.basename(filename, extname);
 		res.body = res.body.replaceAll("__pathname__", pathname)
 			.replaceAll("__filename__", filename)
 			.replaceAll("__basename__", basename)
 			.replaceAll("__extname__", extname);
+		res.is_text = true;
 	}
 	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
 });

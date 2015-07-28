@@ -39,53 +39,32 @@ if (cluster.isMaster) {
 		} else {
 			jhs.options = config.bus;
 		}
+		/*
+		 * AOP 替换所有文本的__dotnar_lib_base_url__
+		 */
+		var common_filter_handle = jhs.options.common_filter_handle;
+		jhs.options.common_filter_handle = function(pathname, params, req, res) {
+			common_filter_handle && common_filter_handle.apply(this, arguments);
+			if (res.is_text) {
+				res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
+
+			}
+		}
 	});
 
 	var ID_MAP = {};
-	console.log("__dotnar_lib_base_url__", config.base_config.lib_url);
+	// console.log("__dotnar_lib_base_url__", config.base_config.lib_url);
 	jhs.filter("*.html", function(path, params, req, res) {
 		if (res.statusCode == "404") {
 			console.log("找不到文件，触发404~");
 		}
-		var res_body = res.body.toString();
-		// //获取预编译信息，SEO无法获取到，这是Ajax请求的 简化、合并
-		// res_body.replace(/<\!--IMPORT\[\[([\s\S]+?)\]\]-->/g, function(s, per_build_info) {
-		// 	console.log(per_build_info);
-		// 	//标识
-		// 	var _id = (+new Date).toString(36) + Math.random().toString(36).substr(2);
-		// 	//依赖列表
-		// 	var imports = per_build_info.split(",").map(function(module_name) {
-		// 		return module_name.trim();
-		// 	});
-		// 	ID_MAP[_id] = {
-		// 		_id: _id,
-		// 		info: per_build_info,
-		// 		imports: imports
-		// 	};
-		// 	res._manual_end = true;
-		// 	var i = 5;
-		// 	var _ti = setInterval(function() {
-		// 		console.log(i);
-		// 		i -= 1
-		// 		res.write("<script src='http://localhost:3000/pre_build?visitor_id=" + encodeURIComponent(_id) + "&imports=" + encodeURIComponent(JSON.stringify(imports)) + "'></script>");
-		// 		res.flush();
-		// 		if (i <= 0) {
-		// 			clearInterval(_ti);
-		// 			res.end(res.body || "");
-		// 		};
-		// 	}, 1000);
-		// 	return "";
-		// });
-
-		// res_body = res_body.replace(/\{\%([\W\w]+?)\%\}/g, function(s, key) {
-		// 	return data[key] || ""
-		// });
-		res.body = res_body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url);
-
 		(jhs.options.html_filter_handle instanceof Function) && jhs.options.html_filter_handle(path, params, req, res);
 	});
 	jhs.filter("*.js", function(path, params, req, res) {
-		res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url);
+		(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
+	});
+
+	jhs.filter("*.css", function(path, params, req, res) {
 		(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
 	});
 
