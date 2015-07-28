@@ -47,7 +47,7 @@ if (cluster.isMaster) {
 			common_filter_handle && common_filter_handle.apply(this, arguments);
 			if (res.is_text) {
 				res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
-
+				res.body = res.body.replaceAll("__location_origin_url__", req.headers["origin"] || "")
 			}
 		}
 	});
