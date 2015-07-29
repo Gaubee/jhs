@@ -5,9 +5,17 @@ var nunjucks = require("nunjucks");
 // var server_host = os.type() === "Linux" ? "api.dotnar.com" : "127.0.0.1";
 var app;
 var client_id = $$.uuid("CLIENT_"); //TCP数据的分割标识
-var is_dev = process.argv.indexOf("-dev") !== -1;
+
+var is_dev;
+var file_key = "product";
+process.argv.some(function(key) {
+	if (key.indexOf("-dev") === 0) {
+		file_key = key.split("-dev:")[1] || "dev";
+		return (is_dev = true);
+	}
+});
 console.log(is_dev ? "开发模式" : "部署模式");
-var base_config = is_dev ? require("./dev.config") : require("./product.config");
+var base_config = require("./" + file_key + ".config");
 
 function _build_nunjucks(pathname) {
 	var nunjucks_env = nunjucks.configure(pathname, {
