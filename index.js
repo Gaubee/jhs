@@ -18,8 +18,8 @@ jhs.use(compression());
  * 配置
  */
 jhs.options = {};
-jhs.filter = function(path, callback) {
-	var f = filter.get(path);
+jhs.filter = function(path, callback, options) {
+	var f = filter.get(path, options);
 	f.addHandle(callback);
 };
 /*
@@ -38,7 +38,7 @@ jhs.emit_filter = function(path, req, res, end) {
 	if (_is_match_someone) {
 		end();
 	} else {
-		console.error("找不到任何路由匹配信息");
+		console.error("找不到任何路由匹配信息", path);
 		res.set('Content-Type', mime.contentType("html"));
 		res.status(404).end(_404file);
 	}
@@ -88,12 +88,36 @@ jhs.all("*", function(req, res, next) {
 /*
  * 基础规则监听
  */
+
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
 
 	console.log(_file_path);
 
+	_route_to_file(_file_path, type, pathname, params, req, res);
+});
+jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
+	var pathname_2 = path.normalize(pathname + (jhs.options.index || "index.html"));
+
+	console.log("目录型路由", pathname, "\n\t进行二次路由：", pathname_2);
+
+	var _file_path = path.normalize((jhs.options.root || __dirname) + pathname_2);
+	var type = _file_path.split(".").pop();
+
+	console.log(_file_path);
+
+	_route_to_file(_file_path, type, pathname, params, req, res);
+
+	//处理后的地址再次出发路由，前提是不死循环触发
+	if (pathname_2.charAt(pathname_2.length - 1) !== "/") {
+		jhs.emit_filter(pathname_2, req, res, function() {
+			!res._manual_end && res.end(res.body || "");
+		});
+	}
+});
+
+function _route_to_file(_file_path, type, pathname, params, req, res) {
 	if (!fs.existsSync(_file_path)) {
 		res.status(404);
 		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
@@ -104,7 +128,7 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 		}
 		_file_path = _404file_path;
 	}
-
+	console.log("	Content-Type:", type, mime.contentType(type))
 	res.set('Content-Type', mime.contentType(type));
 	var fileInfo = cache.getFileCache(_file_path);
 	res.body = fileInfo.source_content;
@@ -118,10 +142,15 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 			.replaceAll("__basename__", basename)
 			.replaceAll("__extname__", extname);
 		res.is_text = true;
+		res.text_file_info = {
+			filename: filename,
+			basename: basename,
+			extname: extname,
+		};
 	}
 	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
-});
 
+};
 //index file
 jhs.filter("/", function(pathname, params, req, res) {
 	jhs.emit_filter(path.normalize("/" + (jhs.options.index || "index.html")), req, res, function() {
