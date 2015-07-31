@@ -39,32 +39,36 @@ if (cluster.isMaster) {
 		} else {
 			jhs.options = config.bus;
 		}
+		jhs.options.before_filter && jhs.options.before_filter(req, res);
 		/*
 		 * AOP 替换所有文本的__dotnar_lib_base_url__
 		 */
 		var common_filter_handle = jhs.options.common_filter_handle;
-		jhs.options.common_filter_handle = function(pathname, params, req, res) {
-			common_filter_handle && common_filter_handle.apply(this, arguments);
-			if (res.is_text) {
-				res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
-				res.body = res.body.replaceAll("__location_origin_url__", req.headers["origin"] || "")
-			}
+		if (!(common_filter_handle && common_filter_handle._is_aop)) {
+			jhs.options.common_filter_handle = function(pathname, params, req, res) {
+				common_filter_handle && common_filter_handle.apply(this, arguments);
+				if (res.is_text) {
+					res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
+					res.body = res.body.replaceAll("__location_origin_url__", req.headers["origin"] || "")
+				}
+			};
+			jhs.options.common_filter_handle._is_aop = true
 		}
 	});
 
 	var ID_MAP = {};
 	// console.log("__dotnar_lib_base_url__", config.base_config.lib_url);
-	jhs.filter("*.html", function(path, params, req, res) {
+	jhs.on("*.html", function(path, params, req, res) {
 		if (res.statusCode == "404") {
 			console.log("找不到文件，触发404~");
 		}
 		(jhs.options.html_filter_handle instanceof Function) && jhs.options.html_filter_handle(path, params, req, res);
 	});
-	jhs.filter("*.js", function(path, params, req, res) {
+	jhs.on("*.js", function(path, params, req, res) {
 		(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
 	});
 
-	jhs.filter("*.css", function(path, params, req, res) {
+	jhs.on("*.css", function(path, params, req, res) {
 		(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
 	});
 

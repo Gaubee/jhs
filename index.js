@@ -28,11 +28,12 @@ jhs.filter = function(path, callback, options) {
 jhs.emit_filter = function(path, req, res, end) {
 	var extend_args = Array.prototype.slice.call(arguments, 1);
 	var _is_match_someone;
-	filter.cache.forEach(function(f) {
+	console.log("?????", path);
+	filter.cache.some(function(f) {
 		if (f.math(path)) {
 			var args = [path, f.params, req, res];
-			f.emitHandle.apply(f, args);
 			_is_match_someone = true;
+			return f.emitHandle.apply(f, args);
 		}
 	});
 	if (_is_match_someone) {
@@ -79,7 +80,7 @@ jhs.all("*", function(req, res, next) {
 	jhs.emit("before_filter", req, res);
 	jhs.emit_filter(req.path, req, res, function() {
 		if (res._manual_end) {
-			console.log("发送源文件被拦截");
+			// console.log("发送源文件被拦截");
 		} else {
 			res.end(res.body || "");
 		}
@@ -93,9 +94,8 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
 
-	console.log(_file_path);
-
 	_route_to_file(_file_path, type, pathname, params, req, res);
+	return true;
 });
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	var pathname_2 = path.normalize(pathname + (jhs.options.index || "index.html"));
@@ -105,8 +105,6 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	var _file_path = path.normalize((jhs.options.root || __dirname) + pathname_2);
 	var type = _file_path.split(".").pop();
 
-	console.log(_file_path);
-
 	_route_to_file(_file_path, type, pathname, params, req, res);
 
 	//处理后的地址再次出发路由，前提是不死循环触发
@@ -115,9 +113,14 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 			!res._manual_end && res.end(res.body || "");
 		});
 	}
+	return true;
 });
 
 function _route_to_file(_file_path, type, pathname, params, req, res) {
+	if (type == "html") {
+		console.log("[", type, "]=>", pathname, "\n\t=>", _file_path, "\n");
+		console.log((new Error).stack)
+	}
 	if (!fs.existsSync(_file_path)) {
 		res.status(404);
 		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
@@ -128,7 +131,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 		}
 		_file_path = _404file_path;
 	}
-	console.log("	Content-Type:", type, mime.contentType(type))
+
 	res.set('Content-Type', mime.contentType(type));
 	var fileInfo = cache.getFileCache(_file_path);
 	res.body = fileInfo.source_content;
@@ -150,6 +153,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 	}
 	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
 
+	jhs.emit("*." + type, pathname, params, req, res)
 };
 //index file
 jhs.filter("/", function(pathname, params, req, res) {
