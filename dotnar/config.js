@@ -1,3 +1,4 @@
+var Fiber = require("fibers");
 var os = require("os");
 var fs = require("fs");
 var nunjucks = require("nunjucks");
@@ -152,9 +153,12 @@ var config = {
 			console.log(req.path, config.bus.root)
 		},
 		// nunjucks_env: _build_nunjucks(base_config.bus_root),
-		html_filter_handle: function(pathname, params, req, res) {
-			// console.log(this.root + pathname, res.statusCode, fs.existsSync(this.root + "/app-pages" + pathname));
-			if (res.statusCode == 404 && fs.existsSync(res.template_root + "/pages" + pathname)) {
+		common_filter_handle: function(pathname, params, req, res) {
+			if (!res.is_text) {
+				return;
+			}
+			console.log(res.is_text, res.text_file_info);
+			if (res.text_file_info.extname === ".html" && res.statusCode == 404 && fs.existsSync(res.template_root + "/pages" + pathname)) {
 				console.log("前端自动二次路由，404 => 200")
 				res.status(200); //找得到，不是真正的404
 			}
@@ -170,8 +174,6 @@ var config = {
 			if (!tmp) {
 				tmp = template_map[pathname] = nunjucks.compile(res.body, _build_nunjucks(res.template_root));
 			}
-			//终止默认相应
-			res._manual_end = true;
 			//请求 配置信息、商家信息
 			var response_id = $$.uuid(); //响应标识
 			// console.log("cookie:", req.headers["cookie"]);
@@ -183,14 +185,17 @@ var config = {
 				cookie: req.headers["cookie"]
 			}));
 			//注册响应事件
+			var fiber = Fiber.current;
 			app.once("res:" + response_id, function(error, resData) {
 				if (error) {
 					throw error;
 				}
 				// console.log(resData.data);
 				// console.log(res.body);
-				res.end(tmp.render(resData.data));
+				res.body = tmp.render(resData.data);
+				fiber.run();
 			});
+			Fiber.yield();
 		}
 	},
 	lib: {
@@ -213,8 +218,6 @@ var config = {
 			if (!tmp) {
 				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
 			}
-			//终止默认相应
-			res._manual_end = true;
 			//请求 配置信息、商家信息
 			var response_id = $$.uuid(); //响应标识
 			// console.log("cookie:", req.headers["cookie"]);
@@ -225,6 +228,7 @@ var config = {
 				data_list: ["appConfigBase"],
 				cookie: req.headers["cookie"]
 			}));
+			var fiber = Fiber.current;
 			//注册响应事件
 			app.once("res:" + response_id, function(error, resData) {
 				if (error) {
@@ -232,8 +236,10 @@ var config = {
 				}
 				// console.log(resData.data);
 				// console.log(res.body);
-				res.end(tmp.render(resData.data));
+				res.body = tmp.render(resData.data);
+				fiber.run();
 			});
+			Fiber.yield();
 		}
 	}
 };

@@ -1,3 +1,4 @@
+var Fiber = require("fibers");
 require("./lib/global")
 var express = require("express");
 var compression = require('compression');
@@ -28,7 +29,6 @@ jhs.filter = function(path, callback, options) {
 jhs.emit_filter = function(path, req, res, end) {
 	var extend_args = Array.prototype.slice.call(arguments, 1);
 	var _is_match_someone;
-	console.log("?????", path);
 	filter.cache.some(function(f) {
 		if (f.math(path)) {
 			var args = [path, f.params, req, res];
@@ -37,7 +37,7 @@ jhs.emit_filter = function(path, req, res, end) {
 		}
 	});
 	if (_is_match_someone) {
-		end();
+		end && end();
 	} else {
 		console.error("找不到任何路由匹配信息", path);
 		res.set('Content-Type', mime.contentType("html"));
@@ -78,18 +78,23 @@ jhs.all("*", function(req, res, next) {
 	req.headers["domain"] = domain;
 	req.headers["protocol"] = http_header.replace("://", "");
 	jhs.emit("before_filter", req, res);
-	jhs.emit_filter(req.path, req, res, function() {
-		if (res._manual_end) {
-			// console.log("发送源文件被拦截");
-		} else {
-			res.end(res.body || "");
-		}
-	});
+	/*
+	 * 路由起始点
+	 */
+	Fiber(function() {
+		jhs.emit_filter(req.path, req, res, function() {
+			if (res._manual_end) {
+				// console.log("发送源文件被拦截");
+			} else {
+				res.end(res.body || "");
+			}
+		});
+	}).run();
 });
 /*
  * 基础规则监听
  */
-
+// filename.ext
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
@@ -97,6 +102,7 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	_route_to_file(_file_path, type, pathname, params, req, res);
 	return true;
 });
+// root/
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	var pathname_2 = path.normalize(pathname + (jhs.options.index || "index.html"));
 
@@ -109,17 +115,14 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 
 	//处理后的地址再次出发路由，前提是不死循环触发
 	if (pathname_2.charAt(pathname_2.length - 1) !== "/") {
-		jhs.emit_filter(pathname_2, req, res, function() {
-			!res._manual_end && res.end(res.body || "");
-		});
+		jhs.emit_filter(pathname_2, req, res);
 	}
 	return true;
 });
-
+//通用文件处理
 function _route_to_file(_file_path, type, pathname, params, req, res) {
 	if (type == "html") {
 		console.log("[", type, "]=>", pathname, "\n\t=>", _file_path, "\n");
-		console.log((new Error).stack)
 	}
 	if (!fs.existsSync(_file_path)) {
 		res.status(404);
@@ -155,12 +158,5 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 
 	jhs.emit("*." + type, pathname, params, req, res)
 };
-//index file
-jhs.filter("/", function(pathname, params, req, res) {
-	jhs.emit_filter(path.normalize("/" + (jhs.options.index || "index.html")), req, res, function() {
-		!res._manual_end && res.end(res.body || "");
-	});
-});
-
 
 module.exports = jhs;

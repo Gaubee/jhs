@@ -1,4 +1,5 @@
 var cluster = require('cluster');
+var Fiber = require("fibers");
 if (cluster.isMaster) {
 	var numCPUs = 1 || require('os').cpus().length;
 	for (var i = 0; i < numCPUs; i++) {
