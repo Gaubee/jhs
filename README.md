@@ -2,8 +2,7 @@
 
 
 ## TODO
-* Clock缓存系统
-* 字符串替代等动态改变文件内容的特性
+* 触发式更新缓存系统cache.clockGet(key, get_cache_handle(return_cb), update_cache_handle(return_cb) || mmtime, return_cb)
 * css、js压缩
 * scss、less动态编译并缓存
 
