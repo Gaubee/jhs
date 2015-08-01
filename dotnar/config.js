@@ -51,7 +51,7 @@ function _get_render_data_cache(options, return_cb) {
 		options.data_list,
 	].join(" | ");
 	if (!jhs.cache.hasClockCache(key)) {
-		jhs.defineClockCache(key, "time", {
+		jhs.cache.defineClockCache(key, "time", {
 			get_value_handle: function(return_cb) {
 				var response_id = $$.uuid(); //响应标识
 				//请求 配置信息、商家信息
@@ -157,22 +157,18 @@ var config = {
 			if (_is_mobile) {
 				req.is_weixin = $$.isWeiXin(_user_agent);
 			}
-			// app.server_conn.send(JSON.stringify({
+			// //请求 配置信息、商家信息
+			// var fiber = Fiber.current;
+			// _get_render_data_cache({
 			// 	type: "get-dotnar_render_data",
-			// 	response_id: response_id,
 			// 	host: req.headers["referer-host"],
-			// 	data_list: ["busInfo"],
+			// 	data_list: ["appConfig", "busInfo"],
 			// 	cookie: req.headers["cookie"]
-			// }));
-			// app.once("res:" + response_id, function(error, resData) {
-			// 	if (error) {
-			// 		throw error;
-			// 	}
-			// 	var busInfo = resData.data;
-			// 	//TODO ,根据 商家的模板字段另外匹配template_root
-			// 	// busInfo.config
-			// 	res.template
+			// }, function(render_data) {
+			// 	res.template_root = '/////';
+			// 	fiber.run();
 			// });
+			// Fiber.yield();
 			res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
 
 			/*
@@ -180,9 +176,9 @@ var config = {
 			 */
 			if (req.path.indexOf("/app-pages/") !== -1) {
 
-				config.bus.root = res.template_root;
+				res.bus_root = config.bus.root = res.template_root;
 			} else {
-				config.bus.root = base_config.bus_root;
+				res.bus_root = config.bus.root = base_config.bus_root;
 			}
 		},
 		// nunjucks_env: _build_nunjucks(base_config.bus_root),
@@ -205,7 +201,7 @@ var config = {
 			//编译模板
 			var tmp = template_map[pathname];
 			if (!tmp) {
-				tmp = template_map[pathname] = nunjucks.compile(res.body, _build_nunjucks(res.template_root));
+				tmp = template_map[pathname] = nunjucks.compile(res.body, _build_nunjucks(res.bus_root));
 			}
 
 			//请求 配置信息、商家信息
@@ -216,7 +212,12 @@ var config = {
 				data_list: ["appConfig", "busInfo"],
 				cookie: req.headers["cookie"]
 			}, function(render_data) {
-				res.body = tmp.render(render_data);
+				try {
+					res.body = tmp.render(render_data);
+				} catch (e) {
+					console.log("[Nunjucks Render Rrror]".colorsHead(), "=>", pathname, ">>", String(e), res.bus_root);
+					res.body = "";
+				}
 				fiber.run();
 			});
 			Fiber.yield();

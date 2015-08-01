@@ -9,7 +9,11 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
-var _404file = cache.getFileCacheContent(__dirname + "/lib/404.html");
+var _404file;
+
+function _get_404_file() {
+	return cache.getFileCacheContent(__dirname + "/lib/404.html");
+};
 /*
  * 初始化
  */
@@ -42,7 +46,7 @@ jhs.emit_filter = function(path, req, res, end) {
 	} else {
 		console.error("找不到任何路由匹配信息", path);
 		res.set('Content-Type', mime.contentType("html"));
-		res.status(404).end(_404file);
+		res.status(404).end(_get_404_file());
 	}
 };
 /*
@@ -126,7 +130,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
 		if (!fs.existsSync(_404file_path)) {
 			res.set('Content-Type', mime.contentType("html"));
-			res.body = _404file;
+			res.body = _get_404_file();
 			return;
 		}
 		_file_path = _404file_path;
