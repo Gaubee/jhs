@@ -2,6 +2,7 @@ var Fiber = require("fibers");
 var os = require("os");
 var fs = require("fs");
 var nunjucks = require("nunjucks");
+var jhs = require("../index");
 
 // var server_host = os.type() === "Linux" ? "api.dotnar.com" : "127.0.0.1";
 var app;
@@ -41,6 +42,39 @@ function _build_nunjucks(pathname) {
 	});
 	_nunjucks_env_map.set(pathname, nunjucks_env);
 	return nunjucks_env;
+};
+
+function _get_render_data_cache(options, return_cb) {
+	var key = "bus_render_data:" + [
+		options.type,
+		options.host,
+		options.data_list,
+	].join(" | ");
+	if (!jhs.cache.hasClockCache(key)) {
+		jhs.defineClockCache(key, "time", {
+			get_value_handle: function(return_cb) {
+				var response_id = $$.uuid(); //响应标识
+				//请求 配置信息、商家信息
+				app.server_conn.send(JSON.stringify({
+					type: options.type,
+					response_id: response_id,
+					host: options.host,
+					data_list: options.data_list,
+					cookie: options.cookie
+				}));
+				//注册响应事件
+				app.once("res:" + response_id, function(error, resData) {
+					if (error) {
+						throw error;
+					}
+					return_cb(resData.data);
+				});
+			},
+			time: 3800,
+			debug: true
+		});
+	}
+	jhs.cache.getClockCache(key, return_cb);
 };
 var config = {
 	base_config: base_config,
@@ -150,14 +184,13 @@ var config = {
 			} else {
 				config.bus.root = base_config.bus_root;
 			}
-			console.log(req.path, config.bus.root)
 		},
 		// nunjucks_env: _build_nunjucks(base_config.bus_root),
 		common_filter_handle: function(pathname, params, req, res) {
 			if (!res.is_text) {
 				return;
 			}
-			console.log(res.is_text, res.text_file_info);
+
 			if (res.text_file_info.extname === ".html" && res.statusCode == 404 && fs.existsSync(res.template_root + "/pages" + pathname)) {
 				console.log("前端自动二次路由，404 => 200")
 				res.status(200); //找得到，不是真正的404
@@ -174,25 +207,16 @@ var config = {
 			if (!tmp) {
 				tmp = template_map[pathname] = nunjucks.compile(res.body, _build_nunjucks(res.template_root));
 			}
+
 			//请求 配置信息、商家信息
-			var response_id = $$.uuid(); //响应标识
-			// console.log("cookie:", req.headers["cookie"]);
-			app.server_conn.send(JSON.stringify({
+			var fiber = Fiber.current;
+			_get_render_data_cache({
 				type: "get-dotnar_render_data",
-				response_id: response_id,
 				host: req.headers["referer-host"],
 				data_list: ["appConfig", "busInfo"],
 				cookie: req.headers["cookie"]
-			}));
-			//注册响应事件
-			var fiber = Fiber.current;
-			app.once("res:" + response_id, function(error, resData) {
-				if (error) {
-					throw error;
-				}
-				// console.log(resData.data);
-				// console.log(res.body);
-				res.body = tmp.render(resData.data);
+			}, function(render_data) {
+				res.body = tmp.render(render_data);
 				fiber.run();
 			});
 			Fiber.yield();
@@ -219,24 +243,14 @@ var config = {
 				tmp = template_map[pathname] = nunjucks.compile(res.body, this.nunjucks_env);
 			}
 			//请求 配置信息、商家信息
-			var response_id = $$.uuid(); //响应标识
-			// console.log("cookie:", req.headers["cookie"]);
-			app.server_conn.send(JSON.stringify({
+			var fiber = Fiber.current;
+			_get_render_data_cache({
 				type: "get-dotnar_render_data",
-				response_id: response_id,
 				host: req.headers["referer-host"],
 				data_list: ["appConfigBase"],
 				cookie: req.headers["cookie"]
-			}));
-			var fiber = Fiber.current;
-			//注册响应事件
-			app.once("res:" + response_id, function(error, resData) {
-				if (error) {
-					throw error;
-				}
-				// console.log(resData.data);
-				// console.log(res.body);
-				res.body = tmp.render(resData.data);
+			}, function(render_data) {
+				res.body = tmp.render(render_data);
 				fiber.run();
 			});
 			Fiber.yield();

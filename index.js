@@ -14,6 +14,7 @@ var _404file = cache.getFileCacheContent(__dirname + "/lib/404.html");
  * 初始化
  */
 jhs.use(compression());
+jhs.cache = cache;
 
 /*
  * 配置
@@ -83,11 +84,7 @@ jhs.all("*", function(req, res, next) {
 	 */
 	Fiber(function() {
 		jhs.emit_filter(req.path, req, res, function() {
-			if (res._manual_end) {
-				// console.log("发送源文件被拦截");
-			} else {
-				res.end(res.body || "");
-			}
+			res.end(res.body || "");
 		});
 	}).run();
 });
@@ -121,9 +118,9 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 });
 //通用文件处理
 function _route_to_file(_file_path, type, pathname, params, req, res) {
-	if (type == "html") {
-		console.log("[", type, "]=>", pathname, "\n\t=>", _file_path, "\n");
-	}
+
+	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", _file_path, "\n")
+
 	if (!fs.existsSync(_file_path)) {
 		res.status(404);
 		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));

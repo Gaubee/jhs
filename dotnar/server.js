@@ -18,12 +18,9 @@ if (cluster.isMaster) {
 	var config = require("./config");
 
 	jhs.on("before_filter", function(req, res) {
-		// console.log(req);
-		// console.log(req.headers.domain, config.domain);
 		var _domain = tld.getDomain(req.headers.host)
 		if (_domain === config.domain) {
 			var _sub_domain = tld.getSubdomain(req.headers.host);
-			// console.log(_sub_domain);
 			if (_sub_domain === "" || _sub_domain === "www") {
 				jhs.options = config.www;
 			} else if (_sub_domain === "admin") {
@@ -58,7 +55,7 @@ if (cluster.isMaster) {
 	});
 
 	var ID_MAP = {};
-	// console.log("__dotnar_lib_base_url__", config.base_config.lib_url);
+
 	jhs.on("*.html", function(path, params, req, res) {
 		if (res.statusCode == "404") {
 			console.log("找不到文件，触发404~");
