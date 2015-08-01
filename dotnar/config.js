@@ -27,7 +27,7 @@ function _build_nunjucks(pathname) {
 		return _nunjucks_env_map.get(pathname);
 	}
 	var nunjucks_env = nunjucks.configure(pathname, {
-		watch: false, //不配置的话，会导致watch文件而不结束进程
+		watch: true,
 		tags: {
 			blockStart: '<%',
 			blockEnd: '%>',
@@ -203,6 +203,7 @@ var config = {
 			if (!tmp) {
 				tmp = template_map[pathname] = nunjucks.compile(res.body, _build_nunjucks(res.bus_root));
 			}
+
 
 			//请求 配置信息、商家信息
 			var fiber = Fiber.current;
