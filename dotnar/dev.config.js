@@ -8,5 +8,9 @@ module.exports = {
 	"default_mobile_template_root": "E:/kp2/base_version",
 	"default_pc_template_root": "E:/kp2/base_version",
 
-	"lib_root": "E:/kp2/O2O_front_end_lib"
+	"lib_root": "E:/kp2/O2O_front_end_lib",
+
+	"js_minify": true,
+	"css_minify": true,
+	"html_minify": false,
 }

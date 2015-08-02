@@ -136,18 +136,16 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 		_file_path = _404file_path;
 	}
 
-	res.set('Content-Type', mime.contentType(type));
+	var content_type = mime.contentType(type);
+	res.set('Content-Type', content_type);
 	var fileInfo = cache.getFileCache(_file_path);
 	res.body = fileInfo.source_content;
+
 
 	if (fileInfo.is_text) {
 		var extname = path.extname(_file_path);
 		var filename = path.basename(_file_path);
 		var basename = path.basename(filename, extname);
-		res.body = res.body.replaceAll("__pathname__", pathname)
-			.replaceAll("__filename__", filename)
-			.replaceAll("__basename__", basename)
-			.replaceAll("__extname__", extname);
 		res.is_text = true;
 		res.text_file_info = {
 			filename: filename,
@@ -155,9 +153,32 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			extname: extname,
 		};
 	}
+
 	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
 
-	jhs.emit("*." + type, pathname, params, req, res)
+	jhs.emit("*." + type, pathname, params, req, res);
+
+	/*
+	 * 用户自定义的处理完成后再做最后的处理，避免nunjucks的include、import指令导入的内容没有处理
+	 */
+	if (fileInfo.is_text) {
+		res.body = res.body.replaceAll("__pathname__", pathname)
+			.replaceAll("__filename__", filename)
+			.replaceAll("__basename__", basename)
+			.replaceAll("__extname__", extname);
+		/* CSS压缩 */
+		if (jhs.options.css_minify && extname.toLowerCase() === ".css") {
+
+		}
+		/* JS压缩 */
+		if (jhs.options.js_minify && extname.toLowerCase() === ".js") {
+
+		}
+		/* HTML压缩 */
+		if (jhs.options.html_minify && extname.toLowerCase() === ".html") {
+
+		}
+	}
 };
 
 module.exports = jhs;
