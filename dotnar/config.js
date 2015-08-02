@@ -144,6 +144,9 @@ var config = {
 		index: "admin-beta.html"
 	},
 	bus: {
+		"js_minify": base_config.js_minify,
+		"css_minify": base_config.css_minify,
+		"html_minify": base_config.html_minify,
 		root: base_config.bus_root,
 		index: "app.html",
 		"404": "app.html", //错误页也自动导向主页，而后用JS进行动态加载404页面
@@ -216,7 +219,7 @@ var config = {
 				try {
 					res.body = tmp.render(render_data);
 				} catch (e) {
-					console.log("[Nunjucks Render Rrror]".colorsHead(), "=>", pathname, ">>", String(e), res.bus_root);
+					console.log("[Nunjucks Render Error]".colorsHead(), "=>", pathname, ">>", String(e), res.bus_root);
 					res.body = "";
 				}
 				fiber.run();

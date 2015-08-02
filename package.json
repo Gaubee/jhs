@@ -1,6 +1,6 @@
 {
   "name": "jhs",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "静态文件服务器，专注渲染工作",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "nunjucks": "^1.3.4",
     "path-to-regexp": "^1.2.0",
     "sockjs-client": "^1.0.0",
-    "tldjs": "^1.5.2"
+    "tldjs": "^1.5.2",
+    "uglify-js": "^2.4.24"
   }
 }

@@ -9,6 +9,8 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
+var CleanCSS = require('clean-css');
+var UglifyJS = require("uglify-js");
 var _404file;
 
 function _get_404_file() {
@@ -168,11 +170,38 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			.replaceAll("__extname__", extname);
 		/* CSS压缩 */
 		if (jhs.options.css_minify && extname.toLowerCase() === ".css") {
-
+			if (fileInfo.minified_css_content) {
+				res.body = fileInfo.minified_css_content;
+			} else {
+				var fiber = Fiber.current;
+				new CleanCSS().minify(res.body, function(err, minified) {
+					if (err) {
+						console.log("[CleanCSS Minify Error]".colorsHead(), "=>", err);
+					}
+					res.body = fileInfo.minified_css_content = minified.styles;
+					if (minified.errors.length + minified.warnings.length) {
+						minified.errors.forEach(function(err) {
+							console.log("[CSS Error]".colorsHead(), "=>", err);
+						});
+						minified.warnings.forEach(function(war) {
+							console.log("[CSS Warn]".colorsHead(), "=>", war);
+						});
+					}
+					fiber.run();
+				});
+				Fiber.yield();
+			}
 		}
 		/* JS压缩 */
 		if (jhs.options.js_minify && extname.toLowerCase() === ".js") {
-
+			if (fileInfo.minified_js_content) {
+				res.body = fileInfo.minified_js_content;
+			} else {
+				var js_minify_result = UglifyJS.minify(res.body, {
+					fromString: true
+				});
+				res.body = fileInfo.minified_js_content = js_minify_result.code;
+			}
 		}
 		/* HTML压缩 */
 		if (jhs.options.html_minify && extname.toLowerCase() === ".html") {

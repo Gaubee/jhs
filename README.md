@@ -2,6 +2,6 @@
 
 
 ## TODO
-* css、js压缩
+* html压缩
 * scss、less动态编译并缓存
 
