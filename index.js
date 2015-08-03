@@ -9,6 +9,7 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
+var sass = require('node-sass');
 var CleanCSS = require('clean-css');
 var UglifyJS = require("uglify-js");
 var _404file;
@@ -168,6 +169,20 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			.replaceAll("__filename__", filename)
 			.replaceAll("__basename__", basename)
 			.replaceAll("__extname__", extname);
+		/* SASS编译 */
+		if (extname.toLowerCase() === ".scss" && /css|\.css/.test(req.query.compile_to.toLowerCase())) {
+			if (fileInfo.compile_sass_content) {
+				res.body = fileInfo.compile_sass_content;
+			} else {
+				var sass_compile_result = sass.renderSync({
+					data: res.body,
+					includePaths: [path.parse(_file_path).dir]
+				});
+				res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
+			}
+			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
+			extname = ".css";
+		}
 		/* CSS压缩 */
 		if (jhs.options.css_minify && extname.toLowerCase() === ".css") {
 			if (fileInfo.minified_css_content) {
