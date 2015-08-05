@@ -173,7 +173,8 @@ var config = {
 			// });
 			// Fiber.yield();
 			res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
-
+			res.extend_reader_data||(res.extend_reader_data = {});
+			_is_mobile = _is_mobile
 			/*
 			 * 判断是否是模板内的文件路径，如果是，定向到模板路径
 			 */
