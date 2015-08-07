@@ -10,7 +10,7 @@ module.exports = {
 
 	"lib_root": "/usr/share/nginx/www/O2O_front_end_lib",
 
-	"js_minify": true,
+	"js_minify": false,
 	"css_minify": true,
 	"html_minify": false,
 }
