@@ -6,7 +6,7 @@ module.exports = {
 
 	"bus_root": "E:/kp2/NEW_DOTNAR_FONTEND/dotnar_base",
 	"default_mobile_template_root": "E:/kp2/base_version",
-	"default_pc_template_root": "E:/kp2/base_version",
+	"default_pc_template_root": "E:/kp2/pc_base_version",
 
 	"lib_root": "E:/kp2/O2O_front_end_lib",
 

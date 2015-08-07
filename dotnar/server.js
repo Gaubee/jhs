@@ -13,7 +13,7 @@ if (cluster.isMaster) {
 	var os = require("os");
 	var http = require("http");
 	var net = require("net");
-	var jhs = require("../index");
+	var jhs = global.jhs = require("../index");
 	var tld = require("tldjs");
 	var config = require("./config");
 
