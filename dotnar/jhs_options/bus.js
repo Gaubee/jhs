@@ -4,6 +4,7 @@ var path = require("path");
 var base_config = require("./_base");
 var common = require("./_common");
 var NunBuilder = require("../nunjucks_builder");
+var jhs = require("../../index");
 
 var bus_jhs_options = {
 	"js_minify": base_config.js_minify,
@@ -15,11 +16,13 @@ var bus_jhs_options = {
 	template_map: Object.create(null),
 	md5_map: Object.create(null),
 	get_file_path: function(req, res, pathname) {
-		if (pathname.indexOf("/app-pages/" !== -1)) {
-			var _root = base_config.bus_root;
-		} else {
-			_root = base_config.default_mobile_template_root;
-		}
+		// 文件请求的优先级
+		//一种继承的形式
+		var _root = [
+			base_config.bus_root,
+			req.is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root,
+			// req.is_mobile ? req.mobile_template_root : req.pc_template_root
+		];
 	},
 	before_filter: function(req, res) {
 		var _is_mobile;
@@ -29,18 +32,8 @@ var bus_jhs_options = {
 		if (_is_mobile) {
 			_is_weixin = req.is_weixin = $$.isWeiXin(_user_agent);
 		}
-		// //请求 配置信息、商家信息
-		// var fiber = Fiber.current;
-		// _get_render_data_cache({
-		// 	type: "get-dotnar_render_data",
-		// 	host: req.headers["referer-host"],
-		// 	data_list: ["appConfig", "busInfo"],
-		// 	cookie: req.headers["cookie"]
-		// }, function(render_data) {
-		// 	res.template_root = '/////';
-		// 	fiber.run();
-		// });
-		// Fiber.yield();
+		//TODO: 请求 配置信息、商家信息，进行正确路由配置
+
 		res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
 		var _extend_reader_data = res.extend_reader_data || (res.extend_reader_data = {});
 		_extend_reader_data.is_mobile = _is_mobile;
@@ -49,7 +42,6 @@ var bus_jhs_options = {
 		 * 判断是否是模板内的文件路径，如果是，定向到模板路径
 		 */
 		if (req.path.indexOf("/app-pages/") !== -1) {
-
 			res.bus_root = bus_jhs_options.root = res.template_root;
 		} else {
 			res.bus_root = bus_jhs_options.root = base_config.bus_root;

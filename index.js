@@ -9,6 +9,7 @@ var path = require("path");
 var jhs = express();
 var mime = require("mime-types");
 var tld = require("tldjs");
+var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
 var sass = require('node-sass');
 var CleanCSS = require('clean-css');
 var UglifyJS = require("uglify-js");
@@ -123,6 +124,27 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	}
 	return true;
 });
+//层级搜寻文件
+function _read_file_by_arry_root(file_paths, pathname) {
+	var result;
+	if (Array.isArray(file_paths)) {
+		file_paths.some(function(file_path) {
+			result = _read_file_by_arry_root(file_path, pathname);
+			return result.status !== 404
+		});
+	} else {
+		var _file_path = path.normalize(file_paths, pathname);
+		result = {
+			filepath: _file_path
+		};
+		if (!fs.existsSync(_file_path)) {
+			result.status = 404;
+		} else {
+			result.status = 200;
+			result.body = cache.getFileCache(_file_path);
+		}
+	}
+};
 //通用文件处理
 function _route_to_file(_file_path, type, pathname, params, req, res) {
 
@@ -169,8 +191,22 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			.replaceAll("__filename__", filename)
 			.replaceAll("__basename__", basename)
 			.replaceAll("__extname__", extname);
+		var _lower_case_extname = extname.toLowerCase();
+		var _lower_case_compile_to = req.query.compile_to;
+		_lower_case_compile_to = (_lower_case_compile_to || "").toLowerCase();
+		/* TYPESCRIPT编译 */
+		if (_lower_case_extname === ".ts" && /js|\.js/.test(_lower_case_compile_to)) {
+			if (fileInfo.compile_tsc_content) {
+				res.body = fileInfo.compile_tsc_content;
+			} else {
+				var tss = new TypeScriptSimple({
+					sourceMap: jhs.options.tsc_sourceMap
+				});
+				var tsc_compile_resule = tss.compile(res.body, path.parse(_file_path).dir)
+			}
+		}
 		/* SASS编译 */
-		if (extname.toLowerCase() === ".scss" && /css|\.css/.test(req.query.compile_to.toLowerCase())) {
+		if (_lower_case_extname === ".scss" && /css|\.css/.test(_lower_case_compile_to)) {
 			if (fileInfo.compile_sass_content) {
 				res.body = fileInfo.compile_sass_content;
 			} else {
@@ -184,7 +220,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			extname = ".css";
 		}
 		/* CSS压缩 */
-		if (jhs.options.css_minify && extname.toLowerCase() === ".css") {
+		if (jhs.options.css_minify && _lower_case_extname === ".css") {
 			if (fileInfo.minified_css_content) {
 				res.body = fileInfo.minified_css_content;
 			} else {
@@ -208,7 +244,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			}
 		}
 		/* JS压缩 */
-		if (jhs.options.js_minify && extname.toLowerCase() === ".js") {
+		if (jhs.options.js_minify && _lower_case_extname === ".js") {
 			if (fileInfo.minified_js_content) {
 				res.body = fileInfo.minified_js_content;
 			} else {
@@ -219,7 +255,7 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 			}
 		}
 		/* HTML压缩 */
-		if (jhs.options.html_minify && extname.toLowerCase() === ".html") {
+		if (jhs.options.html_minify && _lower_case_extname === ".html") {
 
 		}
 	}

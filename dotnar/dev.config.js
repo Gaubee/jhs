@@ -10,7 +10,9 @@ module.exports = {
 
 	"lib_root": "E:/kp2/O2O_front_end_lib",
 
+	"tsc_sourceMap": true,
+
 	"js_minify": false,
-	"css_minify": true,
+	"css_minify": false,
 	"html_minify": false,
 }

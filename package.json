@@ -29,6 +29,7 @@
     "path-to-regexp": "^1.2.0",
     "sockjs-client": "^1.0.0",
     "tldjs": "^1.5.2",
+    "typescript-simple": "^2.0.0",
     "uglify-js": "^2.4.24"
   }
 }
