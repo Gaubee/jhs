@@ -33,8 +33,17 @@ var bus_jhs_options = {
 			_is_weixin = req.is_weixin = $$.isWeiXin(_user_agent);
 		}
 		//TODO: 请求 配置信息、商家信息，进行正确路由配置
-
-		res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
+		var render_data = common.getRenderData({
+			type: "get-dotnar_render_data",
+			host: req.headers["referer-host"],
+			data_list: ["appConfig", "busInfo"],
+			cookie: req.headers["cookie"]
+		});
+		if (render_data.busInfo._id === "jewel") {
+			res.template_root = _is_mobile ? "/usr/local/gitDepot/jewel/" : base_config.default_pc_template_root;
+		} else {
+			res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
+		}
 		var _extend_reader_data = res.extend_reader_data || (res.extend_reader_data = {});
 		_extend_reader_data.is_mobile = _is_mobile;
 		_extend_reader_data.is_weixin = _is_weixin;
