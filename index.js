@@ -86,11 +86,11 @@ jhs.all("*", function(req, res, next) {
 	req.headers["referer-host"] = host;
 	req.headers["domain"] = domain;
 	req.headers["protocol"] = http_header.replace("://", "");
-	jhs.emit("before_filter", req, res);
-	/*
-	 * 路由起始点
-	 */
 	Fiber(function() {
+		jhs.emit("before_filter", req, res);
+		/*
+		 * 路由起始点
+		 */
 		jhs.emit_filter(req.path, req, res, function() {
 			res.end(res.body || "");
 		});
