@@ -8,6 +8,7 @@ if (cluster.isMaster) {
 
 	cluster.on('exit', function(worker, code, signal) {
 		console.log('worker ' + worker.process.pid + ' died');
+		cluster.fork();
 	});
 } else {
 	var os = require("os");
@@ -99,7 +100,7 @@ if (cluster.isMaster) {
 				try {
 					server_info = JSON.parse(json_str);
 				} catch (e) {
-					console.error(e);
+					console.error(e, json_str);
 					setTimeout(_get_server_info, 1000);
 					return;
 				}
