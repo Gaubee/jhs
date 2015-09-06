@@ -4,6 +4,7 @@ logs
 *.sublime-project
 *.sublime-workspace
 *.config.js
+.*
 
 # Runtime data
 pids
