@@ -60,8 +60,7 @@ var bus_jhs_options = {
 		if (!res.is_text) {
 			return;
 		}
-
-		if (res.text_file_info.extname === ".html" && res.statusCode == 404 && fs.existsSync(res.template_root + "/pages" + pathname)) {
+		if (res.text_file_info.extname === ".html" && res.statusCode == 404 && fs.existsSync(res.template_root + "/app-pages/pages" + pathname)) {
 			console.log("前端自动二次路由，404 => 200")
 			res.status(200); //找得到，不是真正的404
 		}
