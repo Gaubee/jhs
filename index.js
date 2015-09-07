@@ -4,9 +4,11 @@ var express = require("express");
 var compression = require('compression');
 var filter = require("./lib/filter");
 var cache = require("./lib/cache");
+var fss = require("./lib/fss");
 var fs = require("fs");
 var path = require("path");
 var jhs = express();
+jhs.fs = fss;
 var mime = require("mime-types");
 var tld = require("tldjs");
 var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
@@ -102,64 +104,51 @@ jhs.all("*", function(req, res, next) {
 // filename.ext
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
-	var _file_path = path.normalize((jhs.options.root || __dirname) + "/" + pathname);
+	console.log("常规路由", pathname);
 
-	_route_to_file(_file_path, type, pathname, params, req, res);
+	_route_to_file(jhs.options.root || __dirname, pathname, type, pathname, params, req, res);
 	return true;
 });
 // root/
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
-	var pathname_2 = path.normalize(pathname + (jhs.options.index || "index.html"));
+	var res_pathname = path.normalize(pathname + (jhs.options.index || "index.html"));
 
-	console.log("目录型路由", pathname, "\n\t进行二次路由：", pathname_2);
+	console.log("目录型路由", pathname, "\n\t进行二次路由：", res_pathname);
 
-	var _file_path = path.normalize((jhs.options.root || __dirname) + pathname_2);
-	var type = _file_path.split(".").pop();
+	// var type = path.extname(res_pathname).substr(1);
 
-	_route_to_file(_file_path, type, pathname, params, req, res);
+	// _route_to_file(jhs.options.root || __dirname, res_pathname, type, pathname, params, req, res);
 
 	//处理后的地址再次出发路由，前提是不死循环触发
-	if (pathname_2.charAt(pathname_2.length - 1) !== "/") {
-		jhs.emit_filter(pathname_2, req, res);
+	if (res_pathname.charAt(res_pathname.length - 1) !== "/") {
+		jhs.emit_filter(res_pathname, req, res);
 	}
 	return true;
 });
-//层级搜寻文件
-function _read_file_by_arry_root(file_paths, pathname) {
-	var result;
-	if (Array.isArray(file_paths)) {
-		file_paths.some(function(file_path) {
-			result = _read_file_by_arry_root(file_path, pathname);
-			return result.status !== 404
-		});
-	} else {
-		var _file_path = path.normalize(file_paths, pathname);
-		result = {
-			filepath: _file_path
-		};
-		if (!fs.existsSync(_file_path)) {
-			result.status = 404;
-		} else {
-			result.status = 200;
-			result.body = cache.getFileCache(_file_path);
-		}
-	}
-};
 //通用文件处理
-function _route_to_file(_file_path, type, pathname, params, req, res) {
+function _route_to_file(file_paths, res_pathname, type, pathname, params, req, res) {
+	/*
+	 * file_paths 目录或者目录列表
+	 * res_pathname 真正要返回的文件
+	 * pathname URL请求的文件，不代表最后要返回的文件
+	 */
 
-	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", _file_path, "\n")
+	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", file_paths, res_pathname, "\n")
 
-	if (!fs.existsSync(_file_path)) {
+	if (!fss.existsFileInPathsSync(file_paths, pathname)) {
 		res.status(404);
-		var _404file_path = path.normalize((jhs.options.root || __dirname) + "/" + (jhs.options["404"] || "404.html"));
-		if (!fs.existsSync(_404file_path)) {
+		var _404file_name = jhs.options["404"] || "404.html";
+		if (!fss.existsFileInPathsSync(file_paths, _404file_name)) {
 			res.set('Content-Type', mime.contentType("html"));
 			res.body = _get_404_file();
 			return;
 		}
-		_file_path = _404file_path;
+		res_pathname = _404file_name;
 	}
+
+	var file_path = file_paths.map(function(filepath) {
+		return path.normalize(filepath + "/" + res_pathname);
+	});
 
 	var content_type = mime.contentType(type);
 	res.set('Content-Type', content_type);
@@ -168,14 +157,14 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 
 
 	if (fileInfo.is_text) {
-		var extname = path.extname(_file_path);
-		var filename = path.basename(_file_path);
-		var basename = path.basename(filename, extname);
+		var _extname = path.extname(res_pathname);
+		var _filename = path.basename(res_pathname);
+		var _basename = path.basename(res_pathname, extname);
 		res.is_text = true;
 		res.text_file_info = {
-			filename: filename,
-			basename: basename,
-			extname: extname,
+			filename: _extname,
+			basename: _filename,
+			extname: _basename,
 		};
 	}
 
@@ -188,10 +177,11 @@ function _route_to_file(_file_path, type, pathname, params, req, res) {
 	 */
 	if (fileInfo.is_text) {
 		res.body = res.body.replaceAll("__pathname__", pathname)
-			.replaceAll("__filename__", filename)
-			.replaceAll("__basename__", basename)
-			.replaceAll("__extname__", extname);
-		var _lower_case_extname = extname.toLowerCase();
+			.replaceAll("__res_pathname__", res_pathname)
+			.replaceAll("__filename__", _filename)
+			.replaceAll("__basename__", _basename)
+			.replaceAll("__extname__", _extname);
+		var _lower_case_extname = _extname.toLowerCase();
 		var _lower_case_compile_to = req.query.compile_to;
 		_lower_case_compile_to = (_lower_case_compile_to || "").toLowerCase();
 		/* TYPESCRIPT编译 */

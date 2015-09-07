@@ -41,20 +41,26 @@ var bus_jhs_options = {
 		});
 		if (render_data.busInfo._id === "jewel") {
 			res.template_root = _is_mobile ? "/usr/local/gitDepot/jewel/" : base_config.default_pc_template_root;
-		} else {
+		} else if (render_data.busInfo.permission.data_pc_template_name || render_data.busInfo.permission.data_mobile_template_name) {
+			res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name)
+			if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
+				res.template_root = null;
+			}
+		}
+		if (!res.template_root) {
 			res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
 		}
+		//配置默认的继承关系
+		if (String.isString(res.template_root)) {
+			res.template_root = [res.template_root, base_config.bus_root];
+		}
+
 		var _extend_reader_data = res.extend_reader_data || (res.extend_reader_data = {});
 		_extend_reader_data.is_mobile = _is_mobile;
 		_extend_reader_data.is_weixin = _is_weixin;
-		/*
-		 * 判断是否是模板内的文件路径，如果是，定向到模板路径
-		 */
-		if (req.path.indexOf("/app-pages/") !== -1) {
-			res.bus_root = bus_jhs_options.root = res.template_root;
-		} else {
-			res.bus_root = bus_jhs_options.root = base_config.bus_root;
-		}
+
+		res.bus_root = bus_jhs_options.root = res.template_root;
+		// console.log("bus_jhs_options.root:", bus_jhs_options.root)
 	},
 	common_filter_handle: function(pathname, params, req, res) {
 		if (!res.is_text) {
