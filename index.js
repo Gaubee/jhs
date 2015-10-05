@@ -2,13 +2,11 @@ var Fiber = require("fibers");
 require("./lib/global")
 var express = require("express");
 var jhs = express();
-jhs.fs = fss;
 module.exports = jhs;
 var compression = require('compression');
 var filter = require("./lib/filter");
 var cache = require("./lib/cache");
 var fss = require("./lib/fss");
-var fs = require("fs");
 var path = require("path");
 var mime = require("mime-types");
 var tld = require("tldjs");
@@ -25,6 +23,7 @@ function _get_404_file() {
  * 初始化
  */
 jhs.use(compression());
+jhs.fs = fss;
 jhs.cache = cache;
 
 /*
@@ -159,16 +158,15 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 	var fileInfo = cache.getFileCache(file_path);
 	res.body = fileInfo.source_content;
 
-
 	if (fileInfo.is_text) {
 		var _extname = path.extname(res_pathname);
 		var _filename = path.basename(res_pathname);
 		var _basename = path.basename(res_pathname, _extname);
 		res.is_text = true;
 		res.text_file_info = {
-			filename: _extname,
-			basename: _filename,
-			extname: _basename,
+			filename: _filename,
+			basename: _basename,
+			extname: _extname,
 		};
 	}
 
@@ -196,7 +194,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 				var tss = new TypeScriptSimple({
 					sourceMap: jhs.options.tsc_sourceMap
 				});
-				var tsc_compile_resule = tss.compile(res.body, path.parse(_file_path).dir)
+				var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir)
 			}
 		}
 		/* SASS编译 */
@@ -206,7 +204,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			} else {
 				var sass_compile_result = sass.renderSync({
 					data: res.body,
-					includePaths: [path.parse(_file_path).dir]
+					includePaths: [path.parse(fileInfo.filepath).dir]
 				});
 				res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
 			}

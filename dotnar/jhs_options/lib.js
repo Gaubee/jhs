@@ -7,6 +7,8 @@ var NunBuilder = require("../nunjucks_builder");
 var lib_nunjucks_env = NunBuilder.buildEnv("LIB_ENV", base_config.lib_root);
 
 var lib_jhs_options = {
+	code_start_reg: base_config.code_start_reg,
+	code_end_reg: base_config.code_end_reg,
 	"js_minify": base_config.js_minify,
 	"css_minify": base_config.css_minify,
 	"html_minify": base_config.html_minify,

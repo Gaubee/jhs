@@ -7,6 +7,8 @@ var NunBuilder = require("../nunjucks_builder");
 var jhs = require("../../index");
 
 var bus_jhs_options = {
+	code_start_reg: base_config.code_start_reg,
+	code_end_reg: base_config.code_end_reg,
 	"js_minify": base_config.js_minify,
 	"css_minify": base_config.css_minify,
 	"html_minify": base_config.html_minify,
@@ -43,14 +45,14 @@ var bus_jhs_options = {
 			data_list: ["appConfig", "busInfo"],
 			cookie: req.headers["cookie"]
 		});
-		if (render_data.busInfo._id === "jewel") {
-			res.template_root = _is_mobile ? "/usr/local/gitDepot/jewel/" : base_config.default_pc_template_root;
-		} else if (render_data.busInfo.permission.data_pc_template_name || render_data.busInfo.permission.data_mobile_template_name) {
-			res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
-			if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
-				res.template_root = null;
-			}
-		}
+		// if (render_data.busInfo._id === "jewel") {
+		// 	res.template_root = _is_mobile ? "/usr/local/gitDepot/jewel/" : base_config.default_pc_template_root;
+		// } else if (render_data.busInfo.permission.data_pc_template_name || render_data.busInfo.permission.data_mobile_template_name) {
+		// 	res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
+		// 	if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
+		// 		res.template_root = null;
+		// 	}
+		// }
 		if (!res.template_root) {
 			res.template_root = _is_mobile ? base_config.default_mobile_template_root : base_config.default_pc_template_root;
 		}
@@ -70,7 +72,7 @@ var bus_jhs_options = {
 		if (!res.is_text) {
 			return;
 		}
-		if (res.text_file_info.extname === ".html" && res.statusCode == 404 && fs.existsSync(res.template_root + "/app-pages/pages" + pathname)) {
+		if (res.text_file_info.extname === ".html" && res.statusCode == 404 && jhs.fs.existsSync(res.template_root.map(root => root + "/app-pages/pages" + pathname) /**/ )) {
 			console.log("前端自动二次路由，404 => 200")
 			res.status(200); //找得到，不是真正的404
 		}

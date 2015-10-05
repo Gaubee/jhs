@@ -4,7 +4,7 @@ module.exports = {
 	"www_root": "E:/kp2/dotnar/public",
 	"admin_root": "E:/kp2/admin_dotnar/public",
 
-	"bus_root": "E:/kp2/NEW_DOTNAR_FONTEND/dotnar_base",
+	"bus_root": "E:/kp2/gaubee_dotnar_base",
 	"default_mobile_template_root": "E:/kp2/base_version",
 	"default_pc_template_root": "E:/kp2/pc_base_version",
 

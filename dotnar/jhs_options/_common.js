@@ -61,6 +61,7 @@ function _get_template_info_cache(template_name, options) {
 
 function _get_template_paths_cache(template_name, options) {
 	var template_info = _get_template_info_cache(template_name, options);
+	console.log(template_info);
 	var relationPaths = template_info && template_info.relationPaths
 	if (relationPaths && options.template_path_replace) {
 		relationPaths = relationPaths.map(function(path) {
