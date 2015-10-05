@@ -1,14 +1,15 @@
 var Fiber = require("fibers");
 require("./lib/global")
 var express = require("express");
+var jhs = express();
+jhs.fs = fss;
+module.exports = jhs;
 var compression = require('compression');
 var filter = require("./lib/filter");
 var cache = require("./lib/cache");
 var fss = require("./lib/fss");
 var fs = require("fs");
 var path = require("path");
-var jhs = express();
-jhs.fs = fss;
 var mime = require("mime-types");
 var tld = require("tldjs");
 var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
@@ -30,6 +31,11 @@ jhs.cache = cache;
  * 配置
  */
 jhs.options = {};
+jhs.getOptionsRoot = function() {
+	var root = jhs.options.root || __dirname;
+	Array.isArray(root) || (root = [root]);
+	return root;
+}
 jhs.filter = function(path, callback, options) {
 	var f = filter.get(path, options);
 	f.addHandle(callback);
@@ -104,20 +110,16 @@ jhs.all("*", function(req, res, next) {
 // filename.ext
 jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
-	console.log("常规路由", pathname);
+	console.log("[ 常规 路由 ]".colorsHead(), pathname);
 
-	_route_to_file(jhs.options.root || __dirname, pathname, type, pathname, params, req, res);
+	_route_to_file(jhs.getOptionsRoot(), pathname, type, pathname, params, req, res);
 	return true;
 });
 // root/
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	var res_pathname = path.normalize(pathname + (jhs.options.index || "index.html"));
 
-	console.log("目录型路由", pathname, "\n\t进行二次路由：", res_pathname);
-
-	// var type = path.extname(res_pathname).substr(1);
-
-	// _route_to_file(jhs.options.root || __dirname, res_pathname, type, pathname, params, req, res);
+	console.log("[ 目录型路由 ]".colorsHead(), pathname, "\n\t进行二次路由：", res_pathname);
 
 	//处理后的地址再次出发路由，前提是不死循环触发
 	if (res_pathname.charAt(res_pathname.length - 1) !== "/") {
@@ -126,12 +128,14 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	return true;
 });
 //通用文件处理
+/*
+ * file_paths 目录或者目录列表
+ * res_pathname 真正要返回的文件
+ * pathname URL请求的文件，不代表最后要返回的文件
+ */
 function _route_to_file(file_paths, res_pathname, type, pathname, params, req, res) {
-	/*
-	 * file_paths 目录或者目录列表
-	 * res_pathname 真正要返回的文件
-	 * pathname URL请求的文件，不代表最后要返回的文件
-	 */
+	//统一用数组
+	Array.isArray(file_paths) || (file_paths = [file_paths]);
 
 	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", file_paths, res_pathname, "\n")
 
@@ -146,8 +150,8 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 		res_pathname = _404file_name;
 	}
 
-	var file_path = file_paths.map(function(filepath) {
-		return filepath + "/" + res_pathname;
+	var file_path = file_paths.map(function(folder_path) {
+		return folder_path + "/" + res_pathname;
 	});
 
 	var content_type = mime.contentType(type);
@@ -250,5 +254,3 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 		}
 	}
 };
-
-module.exports = jhs;
