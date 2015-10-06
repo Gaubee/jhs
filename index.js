@@ -6,6 +6,7 @@ module.exports = jhs;
 var compression = require('compression');
 var filter = require("./lib/filter");
 var cache = require("./lib/cache");
+var temp = require("./lib/temp");
 var fss = require("./lib/fss");
 var path = require("path");
 var mime = require("mime-types");
@@ -186,15 +187,22 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 		var _lower_case_extname = _extname.toLowerCase();
 		var _lower_case_compile_to = req.query.compile_to;
 		_lower_case_compile_to = (_lower_case_compile_to || "").toLowerCase();
+		var _temp_body;
 		/* TYPESCRIPT编译 */
 		if (_lower_case_extname === ".ts" && /js|\.js/.test(_lower_case_compile_to)) {
 			if (fileInfo.compile_tsc_content) {
 				res.body = fileInfo.compile_tsc_content;
 			} else {
-				var tss = new TypeScriptSimple({
-					sourceMap: jhs.options.tsc_sourceMap
-				});
-				var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir)
+				if (_temp_body = temp.get("typescript", fileInfo.source_md5)) {
+					res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
+				} else {
+					var tss = new TypeScriptSimple({
+						sourceMap: jhs.options.tsc_sourceMap
+					});
+					var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
+					res.body = tsc_compile_resule;
+					temp.set("typescript", fileInfo.source_md5, res.body);
+				}
 			}
 		}
 		/* SASS编译 */
@@ -202,11 +210,17 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			if (fileInfo.compile_sass_content) {
 				res.body = fileInfo.compile_sass_content;
 			} else {
-				var sass_compile_result = sass.renderSync({
-					data: res.body,
-					includePaths: [path.parse(fileInfo.filepath).dir]
-				});
-				res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
+				if (_temp_body = temp.get("sass", fileInfo.source_md5)) {
+					// console.log("使用缓存，无需编译！！")
+					res.body = fileInfo.compile_sass_content = _temp_body.toString(); //Buffer to String
+				} else {
+					var sass_compile_result = sass.renderSync({
+						data: res.body,
+						includePaths: [path.parse(fileInfo.filepath).dir]
+					});
+					res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
+					temp.set("sass", fileInfo.source_md5, res.body);
+				}
 			}
 			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
 			extname = ".css";
@@ -216,23 +230,28 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			if (fileInfo.minified_css_content) {
 				res.body = fileInfo.minified_css_content;
 			} else {
-				var fiber = Fiber.current;
-				new CleanCSS().minify(res.body, function(err, minified) {
-					if (err) {
-						console.log("[CleanCSS Minify Error]".colorsHead(), "=>", err);
-					}
-					res.body = fileInfo.minified_css_content = minified.styles;
-					if (minified.errors.length + minified.warnings.length) {
-						minified.errors.forEach(function(err) {
-							console.log("[CSS Error]".colorsHead(), "=>", err);
-						});
-						minified.warnings.forEach(function(war) {
-							console.log("[CSS Warn]".colorsHead(), "=>", war);
-						});
-					}
-					fiber.run();
-				});
-				Fiber.yield();
+				if (_temp_body = temp.get("css_minify", fileInfo.source_md5)) {
+					res.body = fileInfo.minified_css_content = _temp_body.toString(); //Buffer to String
+				} else {
+					var fiber = Fiber.current;
+					new CleanCSS().minify(res.body, function(err, minified) {
+						if (err) {
+							console.log("[CleanCSS Minify Error]".colorsHead(), "=>", err);
+						}
+						res.body = fileInfo.minified_css_content = minified.styles;
+						if (minified.errors.length + minified.warnings.length) {
+							minified.errors.forEach(function(err) {
+								console.log("[CSS Error]".colorsHead(), "=>", err);
+							});
+							minified.warnings.forEach(function(war) {
+								console.log("[CSS Warn]".colorsHead(), "=>", war);
+							});
+						}
+						fiber.run();
+					});
+					Fiber.yield();
+					temp.set("css_minify", fileInfo.source_md5, res.body);
+				}
 			}
 		}
 		/* JS压缩 */
@@ -240,10 +259,15 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			if (fileInfo.minified_js_content) {
 				res.body = fileInfo.minified_js_content;
 			} else {
-				var js_minify_result = UglifyJS.minify(res.body, {
-					fromString: true
-				});
-				res.body = fileInfo.minified_js_content = js_minify_result.code;
+				if (_temp_body = temp.get("js_minify", fileInfo.source_md5)) {
+					res.body = fileInfo.minified_js_content = _temp_body.toString(); //Buffer to String
+				} else {
+					var js_minify_result = UglifyJS.minify(res.body, {
+						fromString: true
+					});
+					res.body = fileInfo.minified_js_content = js_minify_result.code;
+					temp.set("js_minify", fileInfo.source_md5, res.body);
+				}
 			}
 		}
 		/* HTML压缩 */
