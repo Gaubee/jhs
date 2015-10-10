@@ -160,9 +160,10 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 	res.body = fileInfo.source_content;
 
 	if (fileInfo.is_text) {
-		var _extname = path.extname(res_pathname);
-		var _filename = path.basename(res_pathname);
-		var _basename = path.basename(res_pathname, _extname);
+		var _path_info = path.parse(res_pathname);
+		var _extname = _path_info.ext;
+		var _filename = _path_info.base;
+		var _basename = _path_info.name;
 		res.is_text = true;
 		res.text_file_info = {
 			filename: _filename,
