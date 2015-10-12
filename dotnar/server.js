@@ -128,9 +128,11 @@ function _link_server() {
 }
 _get_server_info();
 
-jhs.on("ready", function() {
+jhs.once("ready", function() {
 	jhs.listen(10090, function() {
 		console.log("文件服务启动，Listen Start!");
-		config.onready(jhs);
 	});
+});
+jhs.on("ready", function() {
+	config.onready(jhs);
 });
