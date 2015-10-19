@@ -5,7 +5,7 @@ module.exports = {
 	"admin_root": "E:/kp2/admin_dotnar/public",
 
 	"bus_root": "E:/kp2/gaubee_dotnar_base",
-	"default_mobile_template_root": "E:/kp2/base_version",
+	"default_mobile_template_root": "E:/kp2/tegong_theme",
 	"default_pc_template_root": "E:/kp2/pc_base_version",
 
 	"lib_root": "E:/kp2/O2O_front_end_lib",

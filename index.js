@@ -13,6 +13,7 @@ var mime = require("mime-types");
 var tld = require("tldjs");
 var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
 var sass = require('node-sass');
+var less = require('less');
 var CleanCSS = require('clean-css');
 var UglifyJS = require("uglify-js");
 var _404file;
@@ -31,8 +32,11 @@ jhs.cache = cache;
  * 配置
  */
 jhs.options = {};
-jhs.getOptionsRoot = function() {
-	var root = jhs.options.root || __dirname;
+jhs.getOptions = function(req) {
+	return req.jhs_options || jhs.options;
+};
+jhs.getOptionsRoot = function(req) {
+	var root = jhs.getOptions(req).root || __dirname;
 	Array.isArray(root) || (root = [root]);
 	return root;
 }
@@ -112,12 +116,12 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	console.log("[ 常规 路由 ]".colorsHead(), pathname);
 
-	_route_to_file(jhs.getOptionsRoot(), pathname, type, pathname, params, req, res);
+	_route_to_file(jhs.getOptionsRoot(req), pathname, type, pathname, params, req, res);
 	return true;
 });
 // root/
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
-	var res_pathname = path.normalize(pathname + (jhs.options.index || "index.html"));
+	var res_pathname = path.normalize(pathname + (jhs.getOptions(req).index || "index.html"));
 
 	console.log("[ 目录型路由 ]".colorsHead(), pathname, "\n\t进行二次路由：", res_pathname);
 
@@ -134,6 +138,8 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
  * pathname URL请求的文件，不代表最后要返回的文件
  */
 function _route_to_file(file_paths, res_pathname, type, pathname, params, req, res) {
+	//有大量异步操作，所以要把options缓存起来
+	var jhs_options = jhs.getOptions(req);
 	//统一用数组
 	Array.isArray(file_paths) || (file_paths = [file_paths]);
 
@@ -141,7 +147,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 
 	if (!fss.existsFileInPathsSync(file_paths, pathname)) {
 		res.status(404);
-		var _404file_name = jhs.options["404"] || "404.html";
+		var _404file_name = jhs_options["404"] || "404.html";
 		if (!fss.existsFileInPathsSync(file_paths, _404file_name)) {
 			res.set('Content-Type', mime.contentType("html"));
 			res.body = _get_404_file();
@@ -156,7 +162,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 
 	var content_type = mime.contentType(type);
 	res.set('Content-Type', content_type);
-	var fileInfo = cache.getFileCache(file_path);
+	var fileInfo = cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
 	res.body = fileInfo.source_content;
 
 	if (fileInfo.is_text) {
@@ -172,7 +178,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 		};
 	}
 
-	(jhs.options.common_filter_handle instanceof Function) && jhs.options.common_filter_handle(pathname, params, req, res);
+	(jhs_options.common_filter_handle instanceof Function) && jhs_options.common_filter_handle(pathname, params, req, res);
 
 	jhs.emit("*." + type, pathname, params, req, res);
 
@@ -198,7 +204,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 					res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
 				} else {
 					var tss = new TypeScriptSimple({
-						sourceMap: jhs.options.tsc_sourceMap
+						sourceMap: jhs_options.tsc_sourceMap
 					});
 					var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
 					res.body = tsc_compile_resule;
@@ -226,8 +232,42 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
 			extname = ".css";
 		}
+		/* LESS编译 */
+		if (_lower_case_extname === ".less" && /css|\.css/.test(_lower_case_compile_to)) {
+			if (fileInfo.compile_less_content) {
+				res.body = fileInfo.compile_less_content;
+			} else {
+				if (_temp_body = temp.get("less", fileInfo.source_md5)) {
+					// console.log("使用缓存，无需编译！！")
+					res.body = fileInfo.compile_less_content = _temp_body.toString(); //Buffer to String
+				} else {
+					var fiber = Fiber.current;
+					less.render(res.body, {
+						paths: [path.parse(fileInfo.filepath).dir],
+						filename: _filename
+					}, function(e, output) {
+						process.nextTick(function() {
+							if (e) {
+								// console.error(e instanceof Error)
+								// fiber.throwInto(e);
+								res.status(500);
+								fiber.run(String(e))
+								return
+							}
+							console.log("output:::::", output)
+							fiber.run(output)
+						});
+					});
+					var less_compile_result = Fiber.yield();
+					res.body = fileInfo.compile_less_content = less_compile_result.css.toString();
+					temp.set("less", fileInfo.source_md5, res.body);
+				}
+			}
+			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
+			extname = ".css";
+		}
 		/* CSS压缩 */
-		if (jhs.options.css_minify && _lower_case_extname === ".css") {
+		if (jhs_options.css_minify && _lower_case_extname === ".css") {
 			if (fileInfo.minified_css_content) {
 				res.body = fileInfo.minified_css_content;
 			} else {
@@ -256,7 +296,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			}
 		}
 		/* JS压缩 */
-		if (jhs.options.js_minify && _lower_case_extname === ".js") {
+		if (jhs_options.js_minify && _lower_case_extname === ".js") {
 			if (fileInfo.minified_js_content) {
 				res.body = fileInfo.minified_js_content;
 			} else {
@@ -272,7 +312,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			}
 		}
 		/* HTML压缩 */
-		if (jhs.options.html_minify && _lower_case_extname === ".html") {
+		if (jhs_options.html_minify && _lower_case_extname === ".html") {
 
 		}
 	}

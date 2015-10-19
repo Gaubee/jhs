@@ -9,55 +9,61 @@ var config = require("./config");
 
 jhs.on("before_filter", function(req, res) {
 	var _domain = tld.getDomain(req.headers.host)
+	console.log("REQ.HEADERS.HOST:", req.headers.host);
+	var jhs_options;
 	if (_domain === config.domain) {
 		var _sub_domain = tld.getSubdomain(req.headers.host);
 		if (_sub_domain === "" || _sub_domain === "www") {
-			jhs.options = config.www;
+			jhs_options = config.www;
 		} else if (_sub_domain === "admin") {
-			jhs.options = config.admin;
+			jhs_options = config.admin;
 		} else if (_sub_domain === "lib") {
-			jhs.options = config.lib;
+			jhs_options = config.lib;
 		}
 		/* else if (_sub_domain === "d3") {
-						jhs.options = config.new_bus;
+						jhs_options = config.new_bus;
 					} */
 		else {
-			jhs.options = config.bus;
+			jhs_options = config.bus;
 		}
 	} else {
-		jhs.options = config.bus;
+		jhs_options = config.bus;
 	}
-	jhs.options.before_filter && jhs.options.before_filter(req, res);
+	req.jhs_options = jhs_options;
+	jhs_options.before_filter && jhs_options.before_filter(req, res);
 	/*
 	 * AOP 替换所有文本的__dotnar_lib_base_url__
 	 */
-	var common_filter_handle = jhs.options.common_filter_handle;
+	var common_filter_handle = jhs_options.common_filter_handle;
 	if (!(common_filter_handle && common_filter_handle._is_aop)) {
-		jhs.options.common_filter_handle = function(pathname, params, req, res) {
+		jhs_options.common_filter_handle = function(pathname, params, req, res) {
 			common_filter_handle && common_filter_handle.apply(this, arguments);
 			if (res.is_text) {
 				res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
 				res.body = res.body.replaceAll("__location_origin_url__", req.headers["origin"] || "")
 			}
 		};
-		jhs.options.common_filter_handle._is_aop = true
+		jhs_options.common_filter_handle._is_aop = true
 	}
 });
 
 var ID_MAP = {};
 
 jhs.on("*.html", function(path, params, req, res) {
+	var jhs_options = jhs.getOptions(req);
 	if (res.statusCode == "404") {
 		console.log("找不到文件，触发404~");
 	}
-	(jhs.options.html_filter_handle instanceof Function) && jhs.options.html_filter_handle(path, params, req, res);
+	(jhs_options.html_filter_handle instanceof Function) && jhs_options.html_filter_handle(path, params, req, res);
 });
 jhs.on("*.js", function(path, params, req, res) {
-	(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
+	var jhs_options = jhs.getOptions(req);
+	(jhs_options.js_filter_handle instanceof Function) && jhs_options.js_filter_handle(path, params, req, res);
 });
 
 jhs.on("*.css", function(path, params, req, res) {
-	(jhs.options.js_filter_handle instanceof Function) && jhs.options.js_filter_handle(path, params, req, res);
+	var jhs_options = jhs.getOptions(req);
+	(jhs_options.css_filter_handle instanceof Function) && jhs_options.css_filter_handle(path, params, req, res);
 });
 
 
