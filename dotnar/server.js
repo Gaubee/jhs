@@ -6,6 +6,7 @@ var net = require("net");
 var jhs = global.jhs = require("../index");
 var tld = require("tldjs");
 var config = require("./config");
+// jhs.options.debug = false;
 
 jhs.on("before_filter", function(req, res) {
 	var _domain = tld.getDomain(req.headers.host)

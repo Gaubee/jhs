@@ -27,7 +27,14 @@ function _get_404_file() {
 jhs.use(compression());
 jhs.fs = fss;
 jhs.cache = cache;
-
+// Object.keys(console.__proto__).forEach(function(method_name) {
+// 	var method = console[method_name];
+// 	console[method_name] = function() {
+// 		if (jhs.options.debug) {
+// 			return method.apply(this, arguments);
+// 		}
+// 	}
+// });
 /*
  * 配置
  */
@@ -221,10 +228,23 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 					// console.log("使用缓存，无需编译！！")
 					res.body = fileInfo.compile_sass_content = _temp_body.toString(); //Buffer to String
 				} else {
-					var sass_compile_result = sass.renderSync({
+					var fiber = Fiber.current;
+					sass.render({
 						data: res.body,
 						includePaths: [path.parse(fileInfo.filepath).dir]
+					}, function(e, result) {
+						process.nextTick(function() {
+							if (e) {
+								res.status(500);
+								fiber.run({
+									css: (e && e.stack) || String(e)
+								})
+								return
+							}
+							fiber.run(result)
+						});
 					});
+					var sass_compile_result = Fiber.yield();
 					res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
 					temp.set("sass", fileInfo.source_md5, res.body);
 				}
@@ -251,7 +271,9 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 								// console.error(e instanceof Error)
 								// fiber.throwInto(e);
 								res.status(500);
-								fiber.run(String(e))
+								fiber.run({
+									css: (e && e.stack) || String(e)
+								})
 								return
 							}
 							console.log("output:::::", output)
