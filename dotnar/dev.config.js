@@ -20,6 +20,9 @@ module.exports = {
 		from: "/usr/local/gitDepot/xuezi/jewel",
 		to: "E:/kp2/jewel"
 	}, {
+		from: "/usr/local/gitDepot/xuezi/jewel_pc",
+		to: "E:/kp2/jewel_pc"
+	}, {
 		from: "/usr/local/gitDepot/xuezi/base_version",
 		to: "E:/kp2/NEW_DOTNAR_FONTEND/dotnar_base"
 	}],

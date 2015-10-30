@@ -38,10 +38,11 @@ var bus_jhs_options = {
 		//TODO: 请求 配置信息、商家信息，进行正确路由配置
 		var render_data = common.getRenderData({
 			type: "get-dotnar_render_data",
-			host: req.headers["referer-host"],
+			host: req.headers["host"],//referer-host是指发情请求的源的host，这里是商家，直接诶使用url-host
 			data_list: ["appConfig", "busInfo"],
 			cookie: req.headers["cookie"]
 		});
+		console.log(req.headers,render_data.busInfo);
 		res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
 		if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
 			res.template_root = null;
@@ -81,7 +82,7 @@ var bus_jhs_options = {
 		//请求 配置信息、商家信息
 		var render_data = common.getRenderData({
 			type: "get-dotnar_render_data",
-			host: req.headers["referer-host"],
+			host: req.headers["host"],
 			data_list: ["appConfig", "busInfo"],
 			cookie: req.headers["cookie"]
 		});
