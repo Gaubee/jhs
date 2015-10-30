@@ -42,7 +42,6 @@ var bus_jhs_options = {
 			data_list: ["appConfig", "busInfo"],
 			cookie: req.headers["cookie"]
 		});
-		console.log(req.headers,render_data.busInfo);
 		res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
 		if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
 			res.template_root = null;
