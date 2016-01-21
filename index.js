@@ -153,6 +153,14 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 
 	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", file_paths, res_pathname, "\n")
 
+	//如果是取MAP，直接取出
+	var map_md5 = req.query._MAP_MD5_;
+	var map_from = req.query._MAP_FROM_;
+	if (map_md5 && map_from) {
+		res.body = temp.get(map_from, map_md5);
+		return
+	}
+
 	if (!fss.existsFileInPathsSync(file_paths, pathname)) {
 		res.status(404);
 		var _404file_name = jhs_options["404"] || "404.html";
@@ -228,26 +236,40 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			}
 		}
 		/* Babel编译 */
-		if ((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) {
-			if (fileInfo.compile_tsc_content) {
-				res.body = fileInfo.compile_tsc_content;
+		if (((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) || /bb_to_\.js/.test(_lower_case_compile_to)) {
+			if (fileInfo.compile_bb_content) {
+				res.body = fileInfo.compile_bb_content;
 			} else {
 				if (_temp_body = temp.get("babel-core", fileInfo.source_md5)) {
-					res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
+					res.body = fileInfo.compile_bb_content = _temp_body.toString(); //Buffer to String
 				} else {
 					res.type('js');
 					try {
 						console.time("Babel:" + _filename);
+						console.log(req.query);
+						var sourceMaps = $$.boolean_parse(req.query.debug)
 						var bb_compile_resule = BabelCore.transform(res.body, {
 							filename: __dirname + "/babel/" + _filename,
-							// ast: false,
+							ast: false,
+							sourceMaps: sourceMaps,
 							babelrc: false,
 							code: true,
 							presets: ['es2015'],
 							// plugins: ["syntax-async-generators"]
 						});
+
+						var code = bb_compile_resule.code;
+						if (sourceMaps) {
+							code += "\n//# sourceMappingURL=" + res_pathname +
+								"?_MAP_MD5_=" + fileInfo.source_md5 +
+								"&_MAP_FROM_=babel-core-map";
+							fileInfo.compile_bb_content_map = JSON.stringify(bb_compile_resule.map);
+							temp.set("babel-core-map", fileInfo.source_md5, fileInfo.compile_bb_content_map);
+						}
+
 						console.timeEnd("Babel:" + _filename);
-						res.body = bb_compile_resule.code;
+
+						res.body = fileInfo.compile_bb_content = code;
 						temp.set("babel-core", fileInfo.source_md5, res.body);
 					} catch (e) {
 						console.log(e.stack)
@@ -356,7 +378,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			}
 		}
 		/* JS压缩 */
-		if (jhs_options.js_minify && _lower_case_extname === ".js") {
+		if (jhs_options.js_minify && _lower_case_extname === ".js" || $$.boolean_parse(req.query.min)) {
 			if (fileInfo.minified_js_content) {
 				res.body = fileInfo.minified_js_content;
 			} else {
