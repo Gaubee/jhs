@@ -12,6 +12,7 @@ var path = require("path");
 var mime = require("mime-types");
 var tld = require("tldjs");
 var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
+var BabelCore = require("babel-core");
 var sass = require('node-sass');
 var less = require('less');
 var CleanCSS = require('clean-css');
@@ -213,9 +214,46 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 					var tss = new TypeScriptSimple({
 						sourceMap: jhs_options.tsc_sourceMap
 					});
-					var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
-					res.body = tsc_compile_resule;
-					temp.set("typescript", fileInfo.source_md5, res.body);
+					res.type('js');
+					try {
+						var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
+						res.body = tsc_compile_resule;
+						temp.set("typescript", fileInfo.source_md5, res.body);
+					} catch (e) {
+						console.log(e.stack)
+							// res.status(500);
+						res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
+					}
+				}
+			}
+		}
+		/* Babel编译 */
+		if ((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) {
+			if (fileInfo.compile_tsc_content) {
+				res.body = fileInfo.compile_tsc_content;
+			} else {
+				if (_temp_body = temp.get("babel-core", fileInfo.source_md5)) {
+					res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
+				} else {
+					res.type('js');
+					try {
+						console.time("Babel:" + _filename);
+						var bb_compile_resule = BabelCore.transform(res.body, {
+							filename: __dirname + "/babel/" + _filename,
+							// ast: false,
+							babelrc: false,
+							code: true,
+							presets: ['es2015'],
+							// plugins: ["syntax-async-generators"]
+						});
+						console.timeEnd("Babel:" + _filename);
+						res.body = bb_compile_resule.code;
+						temp.set("babel-core", fileInfo.source_md5, res.body);
+					} catch (e) {
+						console.log(e.stack)
+							// res.status(500);
+						res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
+					}
 				}
 			}
 		}

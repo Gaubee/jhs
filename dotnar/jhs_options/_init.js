@@ -8,7 +8,7 @@ function init(app) {
 		// console.log(data);
 		bufferList.push(data);
 		//发现结束符，开始解析
-		if (data.indexOf(conn.client_id) !== -1) {
+		if (data.indexOf(conn.client_id) !== -1 || (bufferList[bufferList.length - 2] + data).indexOf(conn.client_id) !== -1) {//分割符可能分在上下两个数据区间
 			conn.emit("data-parser")
 		}
 	});
