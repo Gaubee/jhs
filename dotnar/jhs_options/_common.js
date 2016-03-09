@@ -1,5 +1,4 @@
 var init = require("./_init");
-var Fiber = require("fibers");
 var http = require("http");
 
 function _get_render_data_cache(options) {
@@ -33,11 +32,12 @@ function _get_render_data_cache(options) {
 			debug: true
 		});
 	}
-	var fiber = Fiber.current;
-	jhs.cache.getClockCache(key, function(data) {
-		fiber.run(data)
+	return Promise.try((resolve, reject) => {
+		console.flag("_get_render_data_cache", key);
+		jhs.cache.getClockCache(key, function(data) {
+			resolve(data)
+		});
 	});
-	return Fiber.yield();
 };
 
 function _get_template_info_cache(template_name, options) {
@@ -45,31 +45,35 @@ function _get_template_info_cache(template_name, options) {
 	if (!jhs.cache.hasClockCache(key)) {
 		jhs.cache.defineClockCache(key, "time", {
 			get_value_handle: function(return_cb) {
-				var json_data = curl("http://dotnar.com:7070/getInfoByTemplateName/" + template_name);
-				return_cb(JSON.parse(json_data));
+				console.log("http://dotnar.com:7070/getInfoByTemplateName/" + template_name)
+				$$.curl("http://dotnar.com:7070/getInfoByTemplateName/" + template_name).then(json_data => {
+					return_cb(JSON.parse(json_data));
+				});
 			},
 			time: 3800,
 			debug: true
 		});
 	}
-	var fiber = Fiber.current;
-	jhs.cache.getClockCache(key, function(data) {
-		fiber.run(data)
+
+	return Promise.try((resolve, reject) => {
+		jhs.cache.getClockCache(key, function(data) {
+			resolve(data)
+		});
 	});
-	return Fiber.yield();
 };
 
 function _get_template_paths_cache(template_name, options) {
-	var template_info = _get_template_info_cache(template_name, options);
-	// console.log(template_info);
-	var relationPaths = template_info && template_info.relationPaths
-	if (relationPaths && Array.isArray(options.template_path_replace)) {
-		options.template_path_replace.forEach(function(template_path_info) {
-			relationPaths = relationPaths.map(path => template_path_info.from == path ? template_path_info.to : path);
-		});
-		// console.log(relationPaths);
-	}
-	return relationPaths;
+	return _get_template_info_cache(template_name, options).then(template_info => {
+		// console.log(template_info);
+		var relationPaths = template_info && template_info.relationPaths
+		if (relationPaths && Array.isArray(options.template_path_replace)) {
+			options.template_path_replace.forEach(function(template_path_info) {
+				relationPaths = relationPaths.map(path => template_path_info.from == path ? template_path_info.to : path);
+			});
+			// console.log(relationPaths);
+		}
+		return relationPaths;
+	});
 };
 
 module.exports = {

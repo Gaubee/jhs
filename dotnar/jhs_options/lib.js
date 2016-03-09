@@ -1,5 +1,4 @@
 var fs = require("fs");
-var Fiber = require("fibers");
 var path = require("path");
 var base_config = require("./_base");
 var common = require("./_common");
@@ -16,10 +15,10 @@ var lib_jhs_options = {
 	common_filter_handle: function(pathname, params, req, res) {
 		res.header("Access-Control-Allow-Origin", "*");
 	},
-	html_filter_handle: function(pathname, params, req, res) { //注入配置信息
+	html_filter_handle: co.wrap(function*(pathname, params, req, res) { //注入配置信息
 
 		//请求 配置信息、商家信息
-		var render_data = common.getRenderData({
+		var render_data = yield common.getRenderData({
 			type: "get-dotnar_render_data",
 			host: req.headers["referer-host"],
 			data_list: ["appConfigBase"],
@@ -37,6 +36,6 @@ var lib_jhs_options = {
 			res.status(502);
 			res.body = "";
 		}
-	}
+	})
 };
 module.exports = lib_jhs_options;

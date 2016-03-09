@@ -1,14 +1,12 @@
-var Fiber = require("fibers");
-
-var os = require("os");
-var http = require("http");
-var net = require("net");
-var jhs = global.jhs = require("../index");
-var tld = require("tldjs");
-var config = require("./config");
+const os = require("os");
+const http = require("http");
+const net = require("net");
+const jhs = global.jhs = require("../index");
+const tld = require("tldjs");
+const config = require("./config");
 // jhs.options.debug = false;
 
-jhs.on("before_filter", function(req, res) {
+jhs.on("before_filter", co.wrap(function*(req, res) {
 	var _domain = tld.getDomain(req.headers.host)
 	console.log("REQ.HEADERS.HOST:", req.headers.host);
 	var jhs_options;
@@ -22,8 +20,8 @@ jhs.on("before_filter", function(req, res) {
 			jhs_options = config.lib;
 		}
 		/* else if (_sub_domain === "d3") {
-						jhs_options = config.new_bus;
-					} */
+			jhs_options = config.new_bus;
+		} */
 		else {
 			jhs_options = config.bus;
 		}
@@ -31,22 +29,28 @@ jhs.on("before_filter", function(req, res) {
 		jhs_options = config.bus;
 	}
 	req.jhs_options = jhs_options;
-	jhs_options.before_filter && jhs_options.before_filter(req, res);
+	const before_filter_res = jhs_options.before_filter && jhs_options.before_filter(req, res);
+	if (before_filter_res instanceof Promise) {
+		yield before_filter_res
+	}
 	/*
 	 * AOP 替换所有文本的__dotnar_lib_base_url__
 	 */
 	var common_filter_handle = jhs_options.common_filter_handle;
 	if (!(common_filter_handle && common_filter_handle._is_aop)) {
-		jhs_options.common_filter_handle = function(pathname, params, req, res) {
-			common_filter_handle && common_filter_handle.apply(this, arguments);
+		jhs_options.common_filter_handle = co.wrap(function*(pathname, params, req, res) {
+			const cfh_res = common_filter_handle && common_filter_handle.apply(this, arguments);
+			if (cfh_res instanceof Promise) {
+				yield cfh_res;
+			}
 			if (res.is_text) {
 				res.body = res.body.replaceAll("__dotnar_lib_base_url__", config.base_config.lib_url)
 				res.body = res.body.replaceAll("__location_origin_url__", req.headers["origin"] || "")
 			}
-		};
+		});
 		jhs_options.common_filter_handle._is_aop = true
 	}
-});
+}));
 
 var ID_MAP = {};
 
@@ -55,16 +59,16 @@ jhs.on("*.html", function(path, params, req, res) {
 	if (res.statusCode == "404") {
 		console.log("找不到文件，触发404~");
 	}
-	(jhs_options.html_filter_handle instanceof Function) && jhs_options.html_filter_handle(path, params, req, res);
+	return (jhs_options.html_filter_handle instanceof Function) && jhs_options.html_filter_handle(path, params, req, res);
 });
 jhs.on("*.js", function(path, params, req, res) {
 	var jhs_options = jhs.getOptions(req);
-	(jhs_options.js_filter_handle instanceof Function) && jhs_options.js_filter_handle(path, params, req, res);
+	return (jhs_options.js_filter_handle instanceof Function) && jhs_options.js_filter_handle(path, params, req, res);
 });
 
 jhs.on("*.css", function(path, params, req, res) {
 	var jhs_options = jhs.getOptions(req);
-	(jhs_options.css_filter_handle instanceof Function) && jhs_options.css_filter_handle(path, params, req, res);
+	return (jhs_options.css_filter_handle instanceof Function) && jhs_options.css_filter_handle(path, params, req, res);
 });
 
 

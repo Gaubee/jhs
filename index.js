@@ -1,5 +1,5 @@
-var Fiber = require("fibers");
-require("./lib/global")
+"use strict";
+require("gq-core");
 var express = require("express");
 var jhs = express();
 module.exports = jhs;
@@ -9,10 +9,9 @@ var cache = require("./lib/cache");
 var temp = require("./lib/temp");
 var fss = require("./lib/fss");
 var path = require("path");
-var mime = require("mime-types");
 var tld = require("tldjs");
 var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
-var BabelCore = require("babel-core");
+// var BabelCore = require("babel-core");
 var sass = require('node-sass');
 var less = require('less');
 var CleanCSS = require('clean-css');
@@ -55,24 +54,43 @@ jhs.filter = function(path, callback, options) {
 /*
  * 包装的过滤器
  */
-jhs.emit_filter = function(path, req, res, end) {
+jhs.emit_filter = function(path, req, res, then_fun, catch_fun) {
 	var extend_args = Array.prototype.slice.call(arguments, 1);
 	var _is_match_someone;
-	filter.cache.some(function(f) {
+	filter.cache.some(function(f) { // 只触发一个匹配路由
 		if (f.math(path)) {
 			var args = [path, f.params, req, res];
 			_is_match_someone = true;
-			return f.emitHandle.apply(f, args);
+			f.emitHandle.apply(f, args).then(then_fun).catch(catch_fun);
+			return true;
 		}
 	});
-	if (_is_match_someone) {
-		end && end();
-	} else {
+	if (!_is_match_someone) {
 		console.error("找不到任何路由匹配信息", path);
 		res.set('Content-Type', mime.contentType("html"));
 		res.status(404).end(_get_404_file());
 	}
 };
+/*
+ * 可处理Promise的emit
+ */
+jhs.emitPromise = co.wrap(function*(event_name) {
+	const events = jhs._events[event_name];
+	if (events) {
+		const _flag_head = ("[ EMIT:" + event_name + " ]").colorsHead();
+		const _g = console.group(_flag_head);
+		const args = Array.slice(arguments, 1);
+		if (Array.isArray(events)) {
+			yield events.map(handle => handle.apply(this, args));
+		} else if (Function.isFunction(events)) {
+			const res = events.apply(this, args);
+			if (res instanceof Promise) {
+				yield res
+			}
+		}
+		console.groupEnd(_g, _flag_head);
+	}
+});
 /*
  * 缓存操作工具
  */
@@ -87,35 +105,46 @@ for (var _handle_name in cache) {
 /*
  * 核心监听转发器
  */
-jhs.all("*", function(req, res, next) {
+jhs.all("*", co.wrap(function*(req, res, next) {
+	const _flag_content = ("[ " + req.method.toUpperCase() + " ]").colorsHead() + " " + req.path;
+	const _start_time = Date.now();
+	const _g = console.group(_flag_content);
+	const _groupEnd = () => {
+		const _end_time = Date.now();
+		console.groupEnd(_g, _flag_content, "━━┫", _end_time - _start_time, "ms");
+	};
+
 	var referer = req.header("referer");
 	if (!referer) {
 		referer = "http://" + req.header("host") + "/";
 	}
-	http_header = referer.indexOf("https://") === 0 ? "https://" : "http://"
-	var host = referer.replace(http_header, "").split("/")[0];
+	const http_header = referer.indexOf("https://") === 0 ? "https://" : "http://"
+	const host = referer.replace(http_header, "").split("/")[0];
 	if (host) {
 		var origin = http_header + host;
 	} else {
 		origin = req.header("origin");
 		host.replace(http_header, "");
 	}
-	var domain = tld.getDomain(origin) || "";
+	const domain = tld.getDomain(origin) || "";
 	req.headers["referer"] = referer;
 	req.headers["origin"] = origin;
 	req.headers["referer-host"] = host;
 	req.headers["domain"] = domain;
 	req.headers["protocol"] = http_header.replace("://", "");
-	Fiber(function() {
-		jhs.emit("before_filter", req, res);
-		/*
-		 * 路由起始点
-		 */
-		jhs.emit_filter(req.path, req, res, function() {
-			res.end(res.body || "");
-		});
-	}).run();
-});
+	yield jhs.emitPromise("before_filter", req, res);
+	/*
+	 * 路由起始点
+	 */
+	jhs.emit_filter(req.path, req, res, function() {
+		res.end(res.body);
+		_groupEnd();
+	}, function(err) {
+		res.status(502)
+		res.end(err);
+		_groupEnd();
+	});
+}));
 /*
  * 基础规则监听
  */
@@ -124,20 +153,28 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 	var type = params.type;
 	console.log("[ 常规 路由 ]".colorsHead(), pathname);
 
-	_route_to_file(jhs.getOptionsRoot(req), pathname, type, pathname, params, req, res);
-	return true;
+	return _route_to_file(jhs.getOptionsRoot(req), pathname, type, pathname, params, req, res).catch(err => {
+		console.flag(500, err);
+		res.status(500);
+		res.body = err;
+	}).catch(err => {
+		console.flag(502, err);
+	});
 });
 // root/
+const $目录型路由锁 = Symbol("目录型路由锁");
 jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
 	var res_pathname = path.normalize(pathname + (jhs.getOptions(req).index || "index.html"));
 
 	console.log("[ 目录型路由 ]".colorsHead(), pathname, "\n\t进行二次路由：", res_pathname);
 
 	//处理后的地址再次出发路由，前提是不死循环触发
-	if (res_pathname.charAt(res_pathname.length - 1) !== "/") {
-		jhs.emit_filter(res_pathname, req, res);
+	if (!req[$目录型路由锁]) {
+		req[$目录型路由锁] = true;
+		return Promise.try((resolve, reject) => {
+			jhs.emit_filter(res_pathname, req, res, resolve, reject);
+		});
 	}
-	return true;
 });
 //通用文件处理
 /*
@@ -145,40 +182,56 @@ jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
  * res_pathname 真正要返回的文件
  * pathname URL请求的文件，不代表最后要返回的文件
  */
-function _route_to_file(file_paths, res_pathname, type, pathname, params, req, res) {
+const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathname, params, req, res) {
+
+	var _finally_type = type;
+
+	const _start_time = Date.now();
+	const _flag_head = ("[ " + type.placeholder(5) + "]").colorsHead();
+	const _g = console.group(_flag_head, "=>", pathname, "\n\t", "=>", file_paths, res_pathname, "\n");
+
+	const _groupEnd = () => {
+		res.type(_finally_type);
+		const _end_time = Date.now();
+		console.groupEnd(_g, _flag_head, (_end_time - _start_time) + "ms");
+	};
+
 	//有大量异步操作，所以要把options缓存起来
 	var jhs_options = jhs.getOptions(req);
 	//统一用数组
 	Array.isArray(file_paths) || (file_paths = [file_paths]);
 
-	console.log(("[ " + type.placeholder(5) + "]").colorsHead(), "=>", pathname.placeholder(60, "\n\t"), "=>", file_paths, res_pathname, "\n")
-
 	//如果是取MAP，直接取出
 	var map_md5 = req.query._MAP_MD5_;
 	var map_from = req.query._MAP_FROM_;
 	if (map_md5 && map_from) {
-		res.body = temp.get(map_from, map_md5);
+		res.body = yield temp.get(map_from, map_md5);
 		return
 	}
-
-	if (!fss.existsFileInPathsSync(file_paths, pathname)) {
+	/*
+	 * 404
+	 */
+	if (!(yield fss.existsFileInPathsMutilAsync(file_paths, pathname))) {
 		res.status(404);
-		var _404file_name = jhs_options["404"] || "404.html";
-		if (!fss.existsFileInPathsSync(file_paths, _404file_name)) {
-			res.set('Content-Type', mime.contentType("html"));
-			res.body = _get_404_file();
-			return;
+		res.type(type);
+		if (type === "html") {
+			var _404file_name = jhs_options["404"] || "404.html";
+			if (!(yield fss.existsFileInPathsMutilAsync(file_paths, _404file_name))) {
+				res.body = _get_404_file();
+				return _groupEnd();
+			}
+			res_pathname = _404file_name;
+		} else {
+			return _groupEnd();
 		}
-		res_pathname = _404file_name;
+	} else {
+		res.status(200);
 	}
-
 	var file_path = file_paths.map(function(folder_path) {
 		return folder_path + "/" + res_pathname;
 	});
 
-	var content_type = mime.contentType(type);
-	res.set('Content-Type', content_type);
-	var fileInfo = cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
+	var fileInfo = yield cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
 	res.body = fileInfo.source_content;
 
 	if (fileInfo.is_text) {
@@ -193,15 +246,17 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			extname: _extname,
 		};
 	}
-
-	(jhs_options.common_filter_handle instanceof Function) && jhs_options.common_filter_handle(pathname, params, req, res);
-
-	jhs.emit("*." + type, pathname, params, req, res);
+	const common_filter_handle_res = (jhs_options.common_filter_handle instanceof Function) && jhs_options.common_filter_handle(pathname, params, req, res);
+	if (common_filter_handle_res instanceof Promise) {
+		yield common_filter_handle_res;
+	}
+	yield jhs.emitPromise("*." + type, pathname, params, req, res);
 
 	/*
 	 * 用户自定义的处理完成后再做最后的处理，避免nunjucks的include、import指令导入的内容没有处理
 	 */
 	if (fileInfo.is_text) {
+
 		res.body = res.body.replaceAll("__pathname__", pathname)
 			.replaceAll("__res_pathname__", res_pathname)
 			.replaceAll("__filename__", _filename)
@@ -216,13 +271,12 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			if (fileInfo.compile_tsc_content) {
 				res.body = fileInfo.compile_tsc_content;
 			} else {
-				if (_temp_body = temp.get("typescript", fileInfo.source_md5)) {
+				if (_temp_body = yield temp.get("typescript", fileInfo.source_md5)) {
 					res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
 				} else {
 					var tss = new TypeScriptSimple({
 						sourceMap: jhs_options.tsc_sourceMap
 					});
-					res.type('js');
 					try {
 						var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
 						res.body = tsc_compile_resule;
@@ -234,146 +288,122 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 					}
 				}
 			}
+			_finally_type = "js";
 		}
 		/* Babel编译 */
-		if (((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) || /bb_to_\.js/.test(_lower_case_compile_to)) {
-			if (fileInfo.compile_bb_content) {
-				res.body = fileInfo.compile_bb_content;
-			} else {
-				if (_temp_body = temp.get("babel-core", fileInfo.source_md5)) {
-					res.body = fileInfo.compile_bb_content = _temp_body.toString(); //Buffer to String
-				} else {
-					res.type('js');
-					try {
-						console.time("Babel:" + _filename);
-						console.log(req.query);
-						var sourceMaps = $$.boolean_parse(req.query.debug)
-						var bb_compile_resule = BabelCore.transform(res.body, {
-							filename: __dirname + "/babel/" + _filename,
-							ast: false,
-							sourceMaps: sourceMaps,
-							babelrc: false,
-							code: true,
-							presets: ['es2015'],
-							ignore: ["node_modules/**/*.js"],
-							// plugins: ["syntax-async-generators"]
-						});
+		// if (((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) || /bb_to_\.js/.test(_lower_case_compile_to)) {
+		// 	if (fileInfo.compile_bb_content) {
+		// 		res.body = fileInfo.compile_bb_content;
+		// 	} else {
+		// 		if (_temp_body = yield temp.get("babel-core", fileInfo.source_md5)) {
+		// 			res.body = fileInfo.compile_bb_content = _temp_body.toString(); //Buffer to String
+		// 		} else {
+		// 			try {
+		// 				console.time("Babel:" + _filename);
+		// 				console.log(req.query);
+		// 				var sourceMaps = $$.boolean_parse(req.query.debug)
+		// 				var bb_compile_resule = BabelCore.transform(res.body, {
+		// 					filename: __dirname + "/babel/" + _filename,
+		// 					ast: false,
+		// 					sourceMaps: sourceMaps,
+		// 					babelrc: false,
+		// 					code: true,
+		// 					presets: ['es2015'],
+		// 					ignore: ["node_modules/**/*.js"],
+		// 					// plugins: ["syntax-async-generators"]
+		// 				});
 
-						var code = bb_compile_resule.code;
-						if (sourceMaps) {
-							code += "\n//# sourceMappingURL=" + res_pathname +
-								"?_MAP_MD5_=" + fileInfo.source_md5 +
-								"&_MAP_FROM_=babel-core-map";
-							fileInfo.compile_bb_content_map = JSON.stringify(bb_compile_resule.map);
-							temp.set("babel-core-map", fileInfo.source_md5, fileInfo.compile_bb_content_map);
-						}
+		// 				var code = bb_compile_resule.code;
+		// 				if (sourceMaps) {
+		// 					code += "\n//# sourceMappingURL=" + res_pathname +
+		// 						"?_MAP_MD5_=" + fileInfo.source_md5 +
+		// 						"&_MAP_FROM_=babel-core-map";
+		// 					fileInfo.compile_bb_content_map = JSON.stringify(bb_compile_resule.map);
+		// 					temp.set("babel-core-map", fileInfo.source_md5, fileInfo.compile_bb_content_map);
+		// 				}
 
-						console.timeEnd("Babel:" + _filename);
+		// 				console.timeEnd("Babel:" + _filename);
 
-						res.body = fileInfo.compile_bb_content = code;
-						temp.set("babel-core", fileInfo.source_md5, res.body);
-					} catch (e) {
-						console.log(e.stack)
-							// res.status(500);
-						res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
-					}
-				}
-			}
-		}
+		// 				res.body = fileInfo.compile_bb_content = code;
+		// 				temp.set("babel-core", fileInfo.source_md5, res.body);
+		// 			} catch (e) {
+		// 				console.log(e.stack)
+		// 					// res.status(500);
+		// 				res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
+		// 			}
+		// 		}
+		// 	}
+		//	_finally_type = "js";
+		// }
 		/* SASS编译 */
-		if (_lower_case_extname === ".scss" && /css|\.css/.test(_lower_case_compile_to)) {
+		if (_lower_case_extname === ".scss" && /css/.test(_lower_case_compile_to)) {
 			if (fileInfo.compile_sass_content) {
 				res.body = fileInfo.compile_sass_content;
 			} else {
-				if (_temp_body = temp.get("sass", fileInfo.source_md5)) {
+				if (_temp_body = yield temp.get("sass", fileInfo.source_md5)) {
 					// console.log("使用缓存，无需编译！！")
 					res.body = fileInfo.compile_sass_content = _temp_body.toString(); //Buffer to String
 				} else {
-					var fiber = Fiber.current;
-					sass.render({
-						data: res.body,
-						includePaths: [path.parse(fileInfo.filepath).dir]
-					}, function(e, result) {
-						process.nextTick(function() {
-							if (e) {
-								res.status(500);
-								fiber.run({
-									css: (e && e.stack) || String(e)
-								})
-								return
-							}
-							fiber.run(result)
+					var sass_compile_result = yield Promise.try((resolve, reject) => {
+						sass.render({
+							data: res.body,
+							includePaths: [path.parse(fileInfo.filepath).dir]
+						}, (err, res) => {
+							err ? reject(err) : resolve(res);
 						});
 					});
-					var sass_compile_result = Fiber.yield();
 					res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
 					temp.set("sass", fileInfo.source_md5, res.body);
 				}
 			}
 			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
-			extname = ".css";
+			_lower_case_extname = ".css";
+			_finally_type = "css";
 		}
 		/* LESS编译 */
-		if (_lower_case_extname === ".less" && /css|\.css/.test(_lower_case_compile_to)) {
+		if (_lower_case_extname === ".less" && /css/.test(_lower_case_compile_to)) {
 			if (fileInfo.compile_less_content) {
 				res.body = fileInfo.compile_less_content;
 			} else {
-				if (_temp_body = temp.get("less", fileInfo.source_md5)) {
+				if (_temp_body = yield temp.get("less", fileInfo.source_md5)) {
 					// console.log("使用缓存，无需编译！！")
 					res.body = fileInfo.compile_less_content = _temp_body.toString(); //Buffer to String
 				} else {
-					var fiber = Fiber.current;
-					less.render(res.body, {
-						paths: [path.parse(fileInfo.filepath).dir],
-						filename: _filename
-					}, function(e, output) {
-						process.nextTick(function() {
-							if (e) {
-								// console.error(e instanceof Error)
-								// fiber.throwInto(e);
-								res.status(500);
-								fiber.run({
-									css: (e && e.stack) || String(e)
-								})
-								return
-							}
-							console.log("output:::::", output)
-							fiber.run(output)
+					var less_compile_result = yield Promise.try((resolve, reject) => {
+						less.render(res.body, {
+							paths: [path.parse(fileInfo.filepath).dir],
+							filename: _filename
+						}, (err, output) => {
+							// console.log("output:::::", output)
+							err ? reject(err) : resolve(output);
 						});
 					});
-					var less_compile_result = Fiber.yield();
 					res.body = fileInfo.compile_less_content = less_compile_result.css.toString();
 					temp.set("less", fileInfo.source_md5, res.body);
 				}
 			}
 			//文件内容变为CSS了，所以可以参与CSS文件类型的处理
-			extname = ".css";
+			_lower_case_extname = ".css";
+			_finally_type = "css";
 		}
 		/* CSS压缩 */
 		if (jhs_options.css_minify && _lower_case_extname === ".css") {
 			if (fileInfo.minified_css_content) {
 				res.body = fileInfo.minified_css_content;
 			} else {
-				if (_temp_body = temp.get("css_minify", fileInfo.source_md5)) {
+				if (_temp_body = yield temp.get("css_minify", fileInfo.source_md5)) {
 					res.body = fileInfo.minified_css_content = _temp_body.toString(); //Buffer to String
 				} else {
-					var fiber = Fiber.current;
-					new CleanCSS().minify(res.body, function(err, minified) {
-						if (err) {
-							console.log("[CleanCSS Minify Error]".colorsHead(), "=>", err);
-						}
-						res.body = fileInfo.minified_css_content = minified.styles;
-						if (minified.errors.length + minified.warnings.length) {
-							minified.errors.forEach(function(err) {
-								console.log("[CSS Error]".colorsHead(), "=>", err);
-							});
-							minified.warnings.forEach(function(war) {
-								console.log("[CSS Warn]".colorsHead(), "=>", war);
-							});
-						}
-						fiber.run();
+					var clearcss_compile_result = yield Promise.try((resolve, reject) => {
+						new CleanCSS().minify(res.body, function(err, minified) {
+							err ? reject(err) : resolve(minified);
+							if (minified.errors.length + minified.warnings.length) {
+								minified.errors.forEach((err) => console.flag("CSS Error", err));
+								minified.warnings.forEach((war) => console.flag("CSS Warn", war));
+							}
+						});
 					});
-					Fiber.yield();
+					res.body = fileInfo.minified_css_content = clearcss_compile_result.styles;
 					temp.set("css_minify", fileInfo.source_md5, res.body);
 				}
 			}
@@ -383,7 +413,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 			if (fileInfo.minified_js_content) {
 				res.body = fileInfo.minified_js_content;
 			} else {
-				if (_temp_body = temp.get("js_minify", fileInfo.source_md5)) {
+				if (_temp_body = yield temp.get("js_minify", fileInfo.source_md5)) {
 					res.body = fileInfo.minified_js_content = _temp_body.toString(); //Buffer to String
 				} else {
 					var js_minify_result = UglifyJS.minify(res.body, {
@@ -399,4 +429,6 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 
 		}
 	}
-};
+
+	_groupEnd();
+});

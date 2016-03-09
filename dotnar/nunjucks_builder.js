@@ -2,7 +2,6 @@ var _nunjucks_env_map = new Map;
 var _nunjucks_tmp_map = new Map;
 var nunjucks = require("nunjucks");
 
-
 function _build_nunjucks_env(key, pathname, args, cb) {
 	var key = "BUS:" + pathname;
 	if (_nunjucks_env_map.has(key)) {

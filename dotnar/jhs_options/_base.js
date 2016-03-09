@@ -1,4 +1,4 @@
-var is_dev;
+var is_dev = true;
 var file_key = "product";
 process.argv.some(function(key) {
 	if (key.indexOf("-dev") === 0) {
@@ -7,7 +7,7 @@ process.argv.some(function(key) {
 	}
 });
 console.log(is_dev ? "开发模式" : "部署模式");
-var base_config = require("../" + file_key + ".config");
+const base_config = require("../" + file_key + ".config");
 base_config.code_start_reg = "<?js";
 base_config.code_end_reg = "?>";
 

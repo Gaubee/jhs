@@ -1,5 +1,4 @@
 var fs = require("fs");
-var Fiber = require("fibers");
 var path = require("path");
 var base_config = require("./_base");
 var common = require("./_common");
@@ -27,7 +26,7 @@ var bus_jhs_options = {
 			// req.is_mobile ? req.mobile_template_root : req.pc_template_root
 		];
 	},
-	before_filter: function(req, res) {
+	before_filter: co.wrap(function*(req, res) {
 		var _is_mobile;
 		var _is_weixin;
 		var _user_agent = req.header("user-agent");
@@ -36,14 +35,14 @@ var bus_jhs_options = {
 			_is_weixin = req.is_weixin = $$.isWeiXin(_user_agent);
 		}
 		//TODO: 请求 配置信息、商家信息，进行正确路由配置
-		var render_data = common.getRenderData({
+		var render_data = yield common.getRenderData({
 			type: "get-dotnar_render_data",
 			host: req.headers["host"], //referer-host是指发情请求的源的host，这里是商家，直接诶使用url-host
 			data_list: ["appConfig", "busInfo"],
 			cookie: req.headers["cookie"]
 		});
 		if (render_data.busInfo && render_data.busInfo.permission) {
-			res.template_root = common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
+			res.template_root = yield common.getTemplatePaths(_is_mobile ? render_data.busInfo.permission.data_mobile_template_name : render_data.busInfo.permission.data_pc_template_name, bus_jhs_options)
 		}
 		if (!(Array.isArray(res.template_root) && res.template_root.length > 0)) {
 			res.template_root = null;
@@ -63,8 +62,8 @@ var bus_jhs_options = {
 
 		res.bus_root = bus_jhs_options.root = res.template_root;
 		// console.log("bus_jhs_options.root:", bus_jhs_options.root)
-	},
-	common_filter_handle: function(pathname, params, req, res) {
+	}),
+	common_filter_handle: co.wrap(function*(pathname, params, req, res) {
 		if (!res.is_text) {
 			return;
 		}
@@ -81,7 +80,7 @@ var bus_jhs_options = {
 		}
 
 		//请求 配置信息、商家信息
-		var render_data = common.getRenderData({
+		var render_data = yield common.getRenderData({
 			type: "get-dotnar_render_data",
 			host: req.headers["host"],
 			data_list: ["appConfig", "busInfo"],
@@ -103,6 +102,6 @@ var bus_jhs_options = {
 			res.status(502);
 			res.body = "";
 		}
-	}
+	})
 };
 module.exports = bus_jhs_options;
