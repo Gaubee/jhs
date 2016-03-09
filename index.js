@@ -25,7 +25,7 @@ function _get_404_file() {
 /*
  * 初始化
  */
-jhs.use(compression());
+jhs.use(compression()); // GZIP
 jhs.fs = fss;
 jhs.cache = cache;
 // Object.keys(console.__proto__).forEach(function(method_name) {
@@ -255,6 +255,7 @@ function _route_to_file(file_paths, res_pathname, type, pathname, params, req, r
 							babelrc: false,
 							code: true,
 							presets: ['es2015'],
+							ignore: ["node_modules/**/*.js"],
 							// plugins: ["syntax-async-generators"]
 						});
 
