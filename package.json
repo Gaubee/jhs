@@ -1,6 +1,6 @@
 {
   "name": "jh",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "静态文件服务器，专注渲染工作",
   "main": "index.js",
   "scripts": {

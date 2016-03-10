@@ -109,10 +109,12 @@ for (var _handle_name in cache) {
  */
 jhs.all("*", co.wrap(function*(req, res, next) {
 	const _start_time = Date.now();
-	const _g = console.group("◄".magenta + " " + req.path);
+	req.decode_pathname = decodeURI(req.path);
+
+	const _g = console.group("◄".magenta + " " + req.decode_pathname);
 	const _groupEnd = () => {
 		const _end_time = Date.now();
-		console.groupEnd(_g, "►".magenta + " " + req.path, "━━┫", `[${res.statusCode}]`.colorsHead(), "┣━━", _end_time - _start_time, "ms");
+		console.groupEnd(_g, "►".magenta + " " + req.decode_pathname, "━━┫", `[${res.statusCode}]`.colorsHead(), "┣━━", _end_time - _start_time, "ms");
 	};
 
 	var referer = req.header("referer");
@@ -137,7 +139,7 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	/*
 	 * 路由起始点
 	 */
-	jhs.emit_filter(req.path, req, res, function() {
+	jhs.emit_filter(req.decode_pathname, req, res, function() {
 		if (res.body instanceof stream) {
 			res.body.pipe(res);
 		} else {

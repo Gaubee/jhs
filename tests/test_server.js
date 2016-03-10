@@ -1,6 +1,7 @@
 var jhs = require("../index");
 jhs.options.root = __dirname + "/www/";
-jhs.options.root = ["E:/kp2/ShengYi/shengyi_company/public"];
+jhs.options.root = ["E:/Git/qzly"];
+jhs.options.index = "loader.html";
 
 jhs.listen(10090, function() {
 	console.log("Listen Start!");
