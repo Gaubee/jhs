@@ -1,21 +1,23 @@
 "use strict";
 require("gq-core");
-var express = require("express");
-var jhs = express();
+const express = require("express");
+const jhs = express();
 module.exports = jhs;
-var compression = require('compression');
-var filter = require("./lib/filter");
-var cache = require("./lib/cache");
-var temp = require("./lib/temp");
-var fss = require("./lib/fss");
-var path = require("path");
-var tld = require("tldjs");
-var TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
-// var BabelCore = require("babel-core");
-var sass = require('node-sass');
-var less = require('less');
-var CleanCSS = require('clean-css');
-var UglifyJS = require("uglify-js");
+const compression = require('compression');
+const filter = require("./lib/filter");
+const cache = require("./lib/cache"); // 用来读取文件内容
+const temp = require("./lib/temp"); // 用来获取、创建缓冲区文件
+const fss = require("./lib/fss"); // 在这里用来判断文件 存在与否
+const path = require("path");
+const tld = require("tldjs");
+const TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
+// const BabelCore = require("babel-core");
+const sass = require('node-sass');
+const less = require('less');
+const CleanCSS = require('clean-css');
+const UglifyJS = require("uglify-js");
+const stream = require("stream");
+const replaceStream = jhs.replaceStream = require("replacestream");
 var _404file;
 
 function _get_404_file() {
@@ -67,8 +69,8 @@ jhs.emit_filter = function(path, req, res, then_fun, catch_fun) {
 	});
 	if (!_is_match_someone) {
 		console.error("找不到任何路由匹配信息", path);
-		res.set('Content-Type', mime.contentType("html"));
-		res.status(404).end(_get_404_file());
+		res.status(404);
+		then_fun instanceof Function && then_fun();
 	}
 };
 /*
@@ -106,12 +108,11 @@ for (var _handle_name in cache) {
  * 核心监听转发器
  */
 jhs.all("*", co.wrap(function*(req, res, next) {
-	const _flag_content = ("[ " + req.method.toUpperCase() + " ]").colorsHead() + " " + req.path;
 	const _start_time = Date.now();
-	const _g = console.group(_flag_content);
+	const _g = console.group("◄".magenta + " " + req.path);
 	const _groupEnd = () => {
 		const _end_time = Date.now();
-		console.groupEnd(_g, _flag_content, "━━┫", _end_time - _start_time, "ms");
+		console.groupEnd(_g, "►".magenta + " " + req.path, "━━┫", `[${res.statusCode}]`.colorsHead(), "┣━━", _end_time - _start_time, "ms");
 	};
 
 	var referer = req.header("referer");
@@ -137,11 +138,16 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	 * 路由起始点
 	 */
 	jhs.emit_filter(req.path, req, res, function() {
-		res.end(res.body.toString());
+		if (res.body instanceof stream) {
+			res.body.pipe(res);
+		} else {
+			res.end(res.body == undefined ? "" : String(res.body));
+		}
 		_groupEnd();
 	}, function(err) {
-		res.status(502)
-		res.end(err);
+		console.flag(502, err, res.body);
+		res.status(502);
+		res.end(err == undefined ? "" : String(err));
 		_groupEnd();
 	});
 }));
@@ -149,9 +155,9 @@ jhs.all("*", co.wrap(function*(req, res, next) {
  * 基础规则监听
  */
 // filename.ext
-jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
-	var type = params.type;
-	console.log("[ 常规 路由 ]".colorsHead(), pathname);
+jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) { // 有文件后缀的
+	const type = params.type;
+	console.log("[ 常规路由 ]".colorsHead(), pathname);
 
 	return _route_to_file(jhs.getOptionsRoot(req), pathname, type, pathname, params, req, res).catch(err => {
 		console.flag(500, err);
@@ -161,8 +167,8 @@ jhs.filter("*.:type(\\w+)", function(pathname, params, req, res) {
 });
 // root/
 const $目录型路由锁 = Symbol("目录型路由锁");
-jhs.filter(/^(.*)\/$\/?$/i, function(pathname, params, req, res) {
-	var res_pathname = path.normalize(pathname + (jhs.getOptions(req).index || "index.html"));
+jhs.filter(/^(.*)\/?$/i, function(pathname, params, req, res) { // 没有文件后缀的
+	const res_pathname = path.normalize(pathname + "/" + (jhs.getOptions(req).index || "index.html"));
 
 	console.log("[ 目录型路由 ]".colorsHead(), pathname, "\n\t进行二次路由：", res_pathname);
 
@@ -195,7 +201,6 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 	};
 	try {
 
-
 		//有大量异步操作，所以要把options缓存起来
 		var jhs_options = jhs.getOptions(req);
 		//统一用数组
@@ -204,6 +209,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 		//如果是取MAP，直接取出
 		var map_md5 = req.query._MAP_MD5_;
 		var map_from = req.query._MAP_FROM_;
+
 		if (map_md5 && map_from) {
 			res.body = yield temp.get(map_from, map_md5);
 			return
@@ -217,7 +223,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			if (type === "html") {
 				var _404file_name = jhs_options["404"] || "404.html";
 				if (!(yield fss.existsFileInPathsMutilAsync(file_paths, _404file_name))) {
-					res.body = _get_404_file();
+					res.body = yield _get_404_file();
 					return _groupEnd();
 				}
 				res_pathname = _404file_name;
@@ -231,8 +237,9 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			return folder_path + "/" + res_pathname;
 		});
 
-		var fileInfo = yield cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
-		res.body = fileInfo.source_content;
+		const fileInfo = yield cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
+
+		res.body = yield fileInfo.source_stream; // 默认是一个流对象
 
 		if (fileInfo.is_text) {
 			var _path_info = path.parse(res_pathname);
@@ -256,12 +263,18 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 		 * 用户自定义的处理完成后再做最后的处理，避免nunjucks的include、import指令导入的内容没有处理
 		 */
 		if (fileInfo.is_text) {
+			const text_replacer = {
+				"__pathname__": pathname, // URL请求的文件，不代表最后要返回的文件
+				"__res_pathname__": res_pathname, // 真正要返回的文件路径，用来区分多目录的请求一个文件的情况
+				"__filename__": _filename, // 完整文件名
+				"__basename__": _basename, // 文件名体
+				"__extname__": _extname, // 后缀
+			};
+			res.body = res.body.pipe(replaceStream(new RegExp(Object.keys(text_replacer).join("|"), "g"),
+				key => text_replacer[key], {
+					maxMatchLen: 16
+				}));
 
-			res.body = res.body.replaceAll("__pathname__", pathname)
-				.replaceAll("__res_pathname__", res_pathname)
-				.replaceAll("__filename__", _filename)
-				.replaceAll("__basename__", _basename)
-				.replaceAll("__extname__", _extname);
 			var _lower_case_extname = _extname.toLowerCase();
 			var _lower_case_compile_to = req.query.compile_to;
 			_lower_case_compile_to = (_lower_case_compile_to || "").toLowerCase();
@@ -432,6 +445,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 
 		_groupEnd();
 	} catch (e) {
+		console.log("inline ", e)
 		_groupEnd();
 		throw e;
 	}
