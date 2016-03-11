@@ -26,7 +26,7 @@ function _get_404_file() {
 /*
  * 初始化
  */
-jhs.use(compression()); // GZIP
+// jhs.use(compression()); // GZIP
 jhs.fs = fss;
 jhs.cache = cache;
 // Object.keys(console.__proto__).forEach(function(method_name) {
@@ -141,6 +141,11 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	 */
 	jhs.emit_filter(req.decode_pathname, req, res, function() {
 		if (res.body instanceof stream) {
+			const _s = Date.now();
+			res.on("finish", () => {
+				const _e = Date.now();
+				console.log(_e - _s, "ms");
+			});
 			res.body.pipe(res);
 		} else {
 			res.end(res.body == undefined ? "" : String(res.body));
@@ -213,7 +218,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 		var map_from = req.query._MAP_FROM_;
 
 		if (map_md5 && map_from) {
-			res.body = yield temp.get(map_from, map_md5);
+			res.body = yield temp.getStream(map_from, map_md5);
 			return
 		}
 		/*
@@ -250,6 +255,8 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			var _basename = _path_info.name;
 			res.is_text = true;
 			res.text_file_info = {
+				pathname: pathname,
+				res_pathname: res_pathname,
 				filename: _filename,
 				basename: _basename,
 				extname: _extname,
