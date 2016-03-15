@@ -11,7 +11,7 @@ const fss = require("./lib/fss"); // 在这里用来判断文件 存在与否
 const path = require("path");
 const tld = require("tldjs");
 const TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
-// const BabelCore = require("babel-core");
+const BabelCore = require("babel-standalone");
 const sass = require('node-sass');
 const less = require('less');
 const CleanCSS = require('clean-css');
@@ -132,13 +132,17 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	 * 路由起始点
 	 */
 	jhs.emit_filter(req.decode_pathname, req, res, function() {
-		if (res.body instanceof stream) {
-			const _s = Date.now();
-			res.body.pipe(res);
-		} else {
-			res.end(res.body == undefined ? "" : String(res.body));
+		try {
+
+			if (res.body instanceof stream) {
+				res.body.pipe(res);
+			} else {
+				res.end(res.body == undefined ? "" : String(res.body));
+			}
+			_groupEnd();
+		} catch (e) {
+			console.flag("QAQ", e);
 		}
-		_groupEnd();
 	}, function(err) {
 		console.flag(502, err, res.body);
 		res.status(502);
@@ -207,7 +211,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 
 		if (map_md5 && map_from) {
 			res.body = yield temp.getStream(map_from, map_md5);
-			return
+			return _groupEnd();
 		}
 		/*
 		 * 404
@@ -267,6 +271,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 				"__basename__": _basename, // 文件名体
 				"__extname__": _extname, // 后缀
 			};
+			var source_md5;
 			res.body = res.body.pipe(replaceStream(new RegExp(Object.keys(text_replacer).join("|"), "g"),
 				key => text_replacer[key], {
 					maxMatchLen: 16
@@ -301,50 +306,49 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 				_finally_type = "js";
 			}
 			/* Babel编译 */
-			// if (((_lower_case_extname === ".bb" || _filename.endWith(".bb.js")) && /js|\.js/.test(_lower_case_compile_to)) || /bb_to_\.js/.test(_lower_case_compile_to)) {
-			// 	if (fileInfo.compile_bb_content) {
-			// 		res.body = fileInfo.compile_bb_content;
-			// 	} else {
-			// 		if (_temp_body = yield temp.get("babel-core", fileInfo.source_md5)) {
-			// 			res.body = fileInfo.compile_bb_content = _temp_body.toString(); //Buffer to String
-			// 		} else {
-			// 			try {
-			// 				console.time("Babel:" + _filename);
-			// 				console.log(req.query);
-			// 				var sourceMaps = $$.boolean_parse(req.query.debug)
-			// 				var bb_compile_resule = BabelCore.transform(res.body, {
-			// 					filename: __dirname + "/babel/" + _filename,
-			// 					ast: false,
-			// 					sourceMaps: sourceMaps,
-			// 					babelrc: false,
-			// 					code: true,
-			// 					presets: ['es2015'],
-			// 					ignore: ["node_modules/**/*.js"],
-			// 					// plugins: ["syntax-async-generators"]
-			// 				});
+			if (((_lower_case_extname === ".es6" || _filename.endWith(".es6.js")) && /js|\.js/.test(_lower_case_compile_to)) || /es6_to_\.js/.test(_lower_case_compile_to)) {
+				if (fileInfo.compile_es6_content) { // 内存中取
+					res.body = yield fileInfo.compile_es6_content();
+				} else {
+					source_md5 || (source_md5 = yield fileInfo.source_md5);
+					if (yield temp.has("es6", source_md5)) { // 缓存目录区，顺便引用到内存
+						res.body = yield(fileInfo.compile_es6_content = () => temp.getStream("es6", source_md5))();
+					} else { // 编译
+						var sourceMaps = $$.boolean_parse(req.query.debug);
+						var es6_config = Object.assign({
+							ast: false,
+							sourceMaps: sourceMaps,
+							// babelrc: false,
+							code: true,
+							presets: ['es2015'],
+							// plugins: ["syntax-async-generators"]
+						}, jhs_options.es6_config, {
+							filename: path.normalize(__dirname + "/babel/" + _filename),
+							ignore: [path.normalize(__dirname + "/babel/node_modules/**/**")],
+						});
+						console.log(es6_config)
+						try {
+							var es6_code_str = "" + (yield Promise.readStream(res.body));
+							var es6_compile_resule = BabelCore.transform(es6_code_str, es6_config);
 
-			// 				var code = bb_compile_resule.code;
-			// 				if (sourceMaps) {
-			// 					code += "\n//# sourceMappingURL=" + res_pathname +
-			// 						"?_MAP_MD5_=" + fileInfo.source_md5 +
-			// 						"&_MAP_FROM_=babel-core-map";
-			// 					fileInfo.compile_bb_content_map = JSON.stringify(bb_compile_resule.map);
-			// 					temp.set("babel-core-map", fileInfo.source_md5, fileInfo.compile_bb_content_map);
-			// 				}
-
-			// 				console.timeEnd("Babel:" + _filename);
-
-			// 				res.body = fileInfo.compile_bb_content = code;
-			// 				temp.set("babel-core", fileInfo.source_md5, res.body);
-			// 			} catch (e) {
-			// 				console.log(e.stack)
-			// 					// res.status(500);
-			// 				res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
-			// 			}
-			// 		}
-			// 	}
-			//	_finally_type = "js";
-			// }
+							if (sourceMaps) {
+								es6_compile_resule.code += "\n//@ sourceMappingURL=" + res_pathname +
+									".map?_MAP_MD5_=" + source_md5 +
+									"&_MAP_FROM_=es6-source-maps";
+								yield temp.set("es6-source-maps", source_md5, JSON.stringify(es6_compile_resule.map));
+							}
+							res.body = es6_compile_resule.code;
+							yield temp.set("es6", source_md5, res.body);
+							fileInfo.compile_es6_content = () => temp.getStream("es6", source_md5);
+						} catch (e) {
+							console.log(e);
+							// res.status(500);
+							res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
+						}
+					}
+				}
+				_finally_type = "js";
+			}
 			/* SASS编译 */
 			if (_lower_case_extname === ".scss" && /css/.test(_lower_case_compile_to)) {
 				if (fileInfo.compile_sass_content) {
