@@ -29,14 +29,6 @@ function _get_404_file() {
 // jhs.use(compression()); // GZIP
 jhs.fs = fss;
 jhs.cache = cache;
-// Object.keys(console.__proto__).forEach(function(method_name) {
-// 	var method = console[method_name];
-// 	console[method_name] = function() {
-// 		if (jhs.options.debug) {
-// 			return method.apply(this, arguments);
-// 		}
-// 	}
-// });
 /*
  * 配置
  */
@@ -142,10 +134,6 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	jhs.emit_filter(req.decode_pathname, req, res, function() {
 		if (res.body instanceof stream) {
 			const _s = Date.now();
-			res.on("finish", () => {
-				const _e = Date.now();
-				console.log(_e - _s, "ms");
-			});
 			res.body.pipe(res);
 		} else {
 			res.end(res.body == undefined ? "" : String(res.body));
@@ -454,7 +442,6 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 
 		_groupEnd();
 	} catch (e) {
-		console.log("inline ", e)
 		_groupEnd();
 		throw e;
 	}
