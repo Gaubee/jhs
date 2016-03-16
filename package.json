@@ -1,6 +1,6 @@
 {
   "name": "jh",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "静态文件服务器，专注渲染工作",
   "main": "index.js",
   "scripts": {
@@ -25,10 +25,11 @@
     "express": "^4.12.4",
     "gq-core": "^1.4.11",
     "less": "^2.5.3",
-    "node-sass": "^3.2.0",
+    "node-sass": "^3.4.2",
     "nunjucks": "^1.3.4",
     "path-to-regexp": "^1.2.0",
     "replacestream": "^4.0.0",
+    "sass.js": "^0.9.7",
     "sockjs-client": "^1.0.0",
     "tldjs": "^1.5.2",
     "typescript-simple": "^3.0.2",

@@ -12,7 +12,13 @@ const path = require("path");
 const tld = require("tldjs");
 const TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
 const BabelCore = require("babel-standalone");
-const sass = require('node-sass');
+try {
+	const sass = require('node-sass');
+	console.log("USE node-sass for sass compile.\n", sass.info)
+} catch (e) {
+	console.log("USE sass.js for sass compile.")
+}
+const SassJS = require('sass.js');
 const less = require('less');
 const CleanCSS = require('clean-css');
 const UglifyJS = require("uglify-js");
@@ -328,7 +334,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 						}, jhs_options.es6_config, {
 							filename: path.normalize(__dirname + "/babel/" + pathname),
 						});
-						console.log(es6_config)
+						// console.log(es6_config)
 						try {
 							var es6_code_str = "" + (yield Promise.readStream(res.body));
 							var es6_compile_resule = BabelCore.transform(es6_code_str, es6_config);
@@ -354,22 +360,23 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			/* SASS编译 */
 			if (_lower_case_extname === ".scss" && /css/.test(_lower_case_compile_to)) {
 				if (fileInfo.compile_sass_content) {
-					res.body = fileInfo.compile_sass_content;
+					res.body = yield fileInfo.compile_sass_content();
 				} else {
-					if (_temp_body = yield temp.get("sass", fileInfo.source_md5)) {
-						// console.log("使用缓存，无需编译！！")
-						res.body = fileInfo.compile_sass_content = _temp_body.toString(); //Buffer to String
+					source_md5 || (source_md5 = yield fileInfo.source_md5);
+					if (yield temp.has("sass", source_md5)) {
+						res.body = yield(fileInfo.compile_sass_content = () => temp.getStream("sass", source_md5))();
 					} else {
+						var sass_code_str = "" + (yield Promise.readStream(res.body));
 						var sass_compile_result = yield Promise.try((resolve, reject) => {
 							sass.render({
-								data: res.body,
+								data: sass_code_str,
 								includePaths: [path.parse(fileInfo.filepath).dir]
 							}, (err, res) => {
 								err ? reject(err) : resolve(res);
 							});
 						});
 						res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
-						temp.set("sass", fileInfo.source_md5, res.body);
+						temp.set("sass", source_md5, res.body);
 					}
 				}
 				//文件内容变为CSS了，所以可以参与CSS文件类型的处理
