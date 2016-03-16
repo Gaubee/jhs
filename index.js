@@ -321,10 +321,12 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 							// babelrc: false,
 							code: true,
 							presets: ['es2015'],
-							// plugins: ["syntax-async-generators"]
+							plugins: [
+								'transform-async-to-generator',
+								'transform-minify-booleans',
+							]
 						}, jhs_options.es6_config, {
-							filename: path.normalize(__dirname + "/babel/" + _filename),
-							ignore: [path.normalize(__dirname + "/babel/node_modules/**/**")],
+							filename: path.normalize(__dirname + "/babel/" + pathname),
 						});
 						console.log(es6_config)
 						try {
