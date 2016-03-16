@@ -12,23 +12,13 @@ const path = require("path");
 const tld = require("tldjs");
 const TypeScriptSimple = require('typescript-simple').TypeScriptSimple;
 const BabelCore = require("babel-standalone");
-try {
-	const sass = require('node-sass');
-	console.log("USE node-sass for sass compile.\n", sass.info)
-} catch (e) {
-	console.log("USE sass.js for sass compile.")
-}
-const SassJS = require('sass.js');
+const sass = require('node-sass');
 const less = require('less');
 const CleanCSS = require('clean-css');
 const UglifyJS = require("uglify-js");
 const stream = require("stream");
 const replaceStream = jhs.replaceStream = require("replacestream");
-var _404file;
 
-function _get_404_file() {
-	return cache.getFileCacheContent(__dirname + "/lib/404.html");
-};
 /*
  * 初始化
  */
@@ -216,6 +206,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 		var map_from = req.query._MAP_FROM_;
 
 		if (map_md5 && map_from) {
+			console.flag("TEMP", "get sourceMap file from temp", map_from.green, map_md5);
 			res.body = yield temp.getStream(map_from, map_md5);
 			return _groupEnd();
 		}
@@ -228,7 +219,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			if (type === "html") {
 				var _404file_name = jhs_options["404"] || "404.html";
 				if (!(yield fss.existsFileInPathsMutilAsync(file_paths, _404file_name))) {
-					res.body = yield _get_404_file();
+					res.body = yield cache.getFileCacheContent(__dirname + "/lib/404.html"); //404 file stream
 					return _groupEnd();
 				}
 				res_pathname = _404file_name;
@@ -290,21 +281,23 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			/* TYPESCRIPT编译 */
 			if (_lower_case_extname === ".ts" && /js|\.js/.test(_lower_case_compile_to)) {
 				if (fileInfo.compile_tsc_content) {
-					res.body = fileInfo.compile_tsc_content;
+					res.body = yield fileInfo.compile_tsc_content;
 				} else {
-					if (_temp_body = yield temp.get("typescript", fileInfo.source_md5)) {
-						res.body = fileInfo.compile_tsc_content = _temp_body.toString(); //Buffer to String
+					source_md5 || (source_md5 = yield fileInfo.source_md5);
+					if (yield temp.has("typescript", source_md5)) {
+						res.body = yield(fileInfo.compile_tsc_content = () => temp.getStream("typescript", source_md5))();
 					} else {
+						var sourceMaps = $$.boolean_parse(req.query.debug);
 						var tss = new TypeScriptSimple({
-							sourceMap: jhs_options.tsc_sourceMap
+							sourceMap: sourceMaps
 						});
 						try {
 							var tsc_compile_resule = tss.compile(res.body, path.parse(fileInfo.filepath).dir);
 							res.body = tsc_compile_resule;
-							temp.set("typescript", fileInfo.source_md5, res.body);
+							yield temp.set("typescript", source_md5, res.body);
+							fileInfo.compile_tsc_content = () => temp.getStream("typescript", source_md5);
 						} catch (e) {
-							console.log(e.stack)
-								// res.status(500);
+							console.log(e);
 							res.body = '((window.console&&console.error)||alert).call(window.console,' + JSON.stringify(e.message) + ')';
 						}
 					}
@@ -321,7 +314,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 						res.body = yield(fileInfo.compile_es6_content = () => temp.getStream("es6", source_md5))();
 					} else { // 编译
 						var sourceMaps = $$.boolean_parse(req.query.debug);
-						var es6_config = Object.assign({
+						const es6_compile_config = Object.assign({
 							ast: false,
 							sourceMaps: sourceMaps,
 							// babelrc: false,
@@ -331,13 +324,13 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 								'transform-async-to-generator',
 								'transform-minify-booleans',
 							]
-						}, jhs_options.es6_config, {
-							filename: path.normalize(__dirname + "/babel/" + pathname),
+						}, jhs_options.es6_compile_config, {
+							filename: fileInfo.filepath,
 						});
-						// console.log(es6_config)
+						// console.log(es6_compile_config)
 						try {
 							var es6_code_str = "" + (yield Promise.readStream(res.body));
-							var es6_compile_resule = BabelCore.transform(es6_code_str, es6_config);
+							var es6_compile_resule = BabelCore.transform(es6_code_str, es6_compile_config);
 
 							if (sourceMaps) {
 								es6_compile_resule.code += "\n//@ sourceMappingURL=" + res_pathname +
@@ -362,25 +355,60 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 				if (fileInfo.compile_sass_content) {
 					res.body = yield fileInfo.compile_sass_content();
 				} else {
-					source_md5 || (source_md5 = yield fileInfo.source_md5);
-					if (yield temp.has("sass", source_md5)) {
-						res.body = yield(fileInfo.compile_sass_content = () => temp.getStream("sass", source_md5))();
-					} else {
-						var sass_code_str = "" + (yield Promise.readStream(res.body));
-						var sass_compile_result = yield Promise.try((resolve, reject) => {
-							sass.render({
-								data: sass_code_str,
-								includePaths: [path.parse(fileInfo.filepath).dir]
-							}, (err, res) => {
-								err ? reject(err) : resolve(res);
+					/*
+					 * SASS文件不直接从TEMP中获取，因为@import动态的依赖的解析是被动的，所以一定要通过走编译来得到
+					 */
+					// if (yield temp.has("sass", source_md5)) {
+					// 	res.body = yield(fileInfo.compile_sass_content = () => temp.getStream("sass", source_md5))();
+					// } else {
+					var sass_sourceMap = $$.boolean_parse(req.query.debug);
+					const sass_code_str = "" + (yield Promise.readStream(res.body));
+					const sass_compile_config = {
+						file: fileInfo.filepath,
+						outFile: path.parse(fileInfo.filepath).dir + "/" + _basename + ".css",
+						data: sass_code_str,
+						importer: function(url, prev, done) {
+							co(function*() {
+								const file_path = file_paths.map(function(folder_path) {
+									return folder_path + "/" + url;
+								});
+								// 添加依赖
+								file_path.forEach(dep_filepath => fss.addDepens(fileInfo.filepath, dep_filepath));
+
+								const import_fileInfo = yield cache.getFileCache(file_path, cache.options.file_cache_time, jhs_options);
+								const fileBuffer = yield Promise.readStream(yield import_fileInfo.source_stream);
+								done({
+									// file: import_fileInfo.filepath,
+									file: path.parse(fileInfo.filepath).dir + "/" + url, //跨目录会导致和sourceMap里面的信息匹配不上
+									contents: fileBuffer.toString()
+								});
+							}, err => {
+								console.flag("sass importer error", err)
 							});
+						},
+						includePaths: file_paths,
+						sourceMap: sass_sourceMap,
+						outputStyle: jhs_options.css_minify ? "compressed" : "nested"
+					};
+					// console.flag("sass_compile_config", sass_compile_config);
+					const sass_compile_result = yield Promise.try((resolve, reject) => {
+						sass.render(sass_compile_config, (err, res) => {
+							err ? reject(err) : resolve(res);
 						});
-						res.body = fileInfo.compile_sass_content = sass_compile_result.css.toString();
-						temp.set("sass", source_md5, res.body);
+					});
+					// console.log(sass_compile_result);
+					if (sass_sourceMap) {
+						source_md5 || (source_md5 = yield fileInfo.source_md5);
+						sass_compile_result.css += "\n/*# sourceMappingURL=" + res_pathname +
+							".map?_MAP_MD5_=" + source_md5 +
+							"&_MAP_FROM_=sass-source-maps*/"
+						yield temp.set("sass-source-maps", source_md5, sass_compile_result.map);
 					}
+					res.body = sass_compile_result.css;
+					yield temp.set("sass", source_md5, res.body);
+					fileInfo.compile_sass_content = () => temp.getStream("sass", source_md5);
+					// }
 				}
-				//文件内容变为CSS了，所以可以参与CSS文件类型的处理
-				_lower_case_extname = ".css";
 				_finally_type = "css";
 			}
 			/* LESS编译 */
@@ -405,8 +433,6 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 						temp.set("less", fileInfo.source_md5, res.body);
 					}
 				}
-				//文件内容变为CSS了，所以可以参与CSS文件类型的处理
-				_lower_case_extname = ".css";
 				_finally_type = "css";
 			}
 			/* CSS压缩 */
