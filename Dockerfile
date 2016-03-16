@@ -1,4 +1,6 @@
 FROM node:4-onbuild
-EXPOSE 8810
 MAINTAINER gaubee
-# COPY . /jhs
+
+EXPOSE 10101
+EXPOSE 80
+EXPOSE 443

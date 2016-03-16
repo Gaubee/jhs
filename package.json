@@ -1,10 +1,10 @@
 {
   "name": "jh",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "静态文件服务器，专注渲染工作",
   "main": "index.js",
   "scripts": {
-    "test1": "node tests/file_server.js",
+    "start": "node server.js",
     "dev": "nodemon dotnar/server.js -dev"
   },
   "repository": {
