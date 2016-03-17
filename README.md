@@ -6,6 +6,11 @@
 
 路由分两种：**文件**、**目录**。 如果你的文件没有后缀，那么是无法访问到这个文件的，他会被当成是目录来进行访问，访问目录下的`index.html`。
 
+如果ROOT提供的是HTTP协议，那么要注意URL-pathname中的多个`/、\\`会被当成一个`/`来处理：
+```
+"http://a.com/////a//c.b.js" ==> "http://a.com/a/c/b.js"
+```
+
 `JHS`代表`JH-Server`，是程序核心
 
 ## 如何加载编译后的文件
@@ -14,6 +19,23 @@
 ```
 curl http://localhost/test.less?compile_to=.css
 ```
+
+## 实现自定义路由
+
+`JHS`的options是可以动态更改的，从而动态更改一次请求的路由：
+```js
+// 通过ON事件监听，可以返回一个Promise对象，从而控制执行流程
+jhs.on("before_filter", co.wrap(function*(req, res) {
+    if(req.path.entWiht(".js")){
+        req.jhs_options = {root : __dirname+"/other_js/"};
+    }
+}));
+jhs.on("*.js",co.wrap(function*(req, res){
+    
+}));
+```
+
+# TODO
 
 ## 如何安装
 
@@ -61,24 +83,3 @@ npm install --save jh --m:all
 # 按需模块
 npm install --save jh --m:less,sass,ts
 ```
-
-## 实现自定义路由
-
-`JHS`的options是可以动态更改的，从而动态更改一次请求的路由：
-```js
-// 通过ON事件监听，可以返回一个Promise对象，从而控制执行流程
-jhs.on("before_filter", co.wrap(function*(req, res) {
-    if(req.path.entWiht(".js")){
-        req.jhs_options = {root : __dirname+"/other_js/"};
-    }
-}));
-jhs.on("*.js",co.wrap(function*(req, res){
-    
-}));
-```
-
-## TODO
-* html压缩
-* 将node-sass缓存安装更快的纯js实现的sass.js或者效率更高的libsass
-* 
-

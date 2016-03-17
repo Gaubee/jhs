@@ -370,7 +370,7 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 						importer: function(url, prev, done) {
 							co(function*() {
 								const file_path = file_paths.map(function(folder_path) {
-									return folder_path + "/" + url;
+									return folder_path + "/" + fileInfo._folderpath_without_root + "/" + url;
 								});
 								// 添加依赖
 								file_path.forEach(dep_filepath => fss.addDepens(fileInfo.filepath, dep_filepath));
