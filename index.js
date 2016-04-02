@@ -67,18 +67,23 @@ jhs.emit_filter = function(path, req, res, then_fun, catch_fun) {
 jhs.emitPromise = co.wrap(function*(event_name) {
 	const events = jhs._events[event_name];
 	if (events) {
-		const _flag_head = ("[ EMIT:" + event_name + " ]").colorsHead();
-		const _g = console.group(_flag_head);
-		const args = Array.slice(arguments, 1);
-		if (Array.isArray(events)) {
-			yield events.map(handle => handle.apply(this, args));
-		} else if (Function.isFunction(events)) {
-			const res = events.apply(this, args);
-			if (res instanceof Promise) {
-				yield res
+		try {
+			const _flag_head = ("[ EMIT:" + event_name + " ]").colorsHead();
+			const _g = console.group(_flag_head);
+			const args = Array.slice(arguments, 1);
+			if (Array.isArray(events)) {
+				yield events.map(handle => handle.apply(this, args));
+			} else if (Function.isFunction(events)) {
+				const res = events.apply(this, args);
+				if (res instanceof Promise) {
+					yield res
+				}
 			}
+			console.groupEnd(_g, _flag_head);
+		} catch (e) {
+			console.error(e)
+			console.groupEnd(_g, _flag_head);
 		}
-		console.groupEnd(_g, _flag_head);
 	}
 });
 /*
@@ -129,8 +134,13 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	 */
 	jhs.emit_filter(req.decode_pathname, req, res, function() {
 		try {
-
 			if (res.body instanceof stream) {
+				// 如果HTTP协议，把头文件信息拷贝过来
+				// if (res.body.headers) {
+				// 	Object.keys(res.body.headers).forEach(key => {
+				// 		res.set(key, res.body.headers[key])
+				// 	});
+				// }
 				res.body.pipe(res);
 			} else {
 				res.end(res.body == undefined ? "" : String(res.body));
