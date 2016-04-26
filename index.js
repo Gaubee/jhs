@@ -23,7 +23,7 @@ const replaceStream = jhs.replaceStream = require("replacestream");
  * 初始化
  */
 // jhs.use(compression()); // GZIP
-jhs.fs = fss;
+jhs.fs = jhs.fss = fss;
 jhs.cache = cache;
 /*
  * 配置
@@ -44,22 +44,24 @@ jhs.filter = function(path, callback, options) {
 /*
  * 包装的过滤器
  */
-jhs.emit_filter = function(path, req, res, then_fun, catch_fun) {
-	var extend_args = Array.prototype.slice.call(arguments, 1);
-	var _is_match_someone;
-	filter.cache.some(function(f) { // 只触发一个匹配路由
-		if (f.math(path)) {
-			var args = [path, f.params, req, res];
-			_is_match_someone = true;
-			f.emitHandle.apply(f, args).then(then_fun).catch(catch_fun);
-			return true;
+jhs.emit_filter = function(path, req, res) {
+	return Promise.try((resolve, reject) => {
+		var extend_args = Array.prototype.slice.call(arguments, 1);
+		var _is_match_someone;
+		filter.cache.some(function(f) { // 只触发一个匹配路由
+			if (f.math(path)) {
+				var args = [path, f.params, req, res];
+				_is_match_someone = true;
+				f.emitHandle.apply(f, args).then(resolve).catch(reject);
+				return true;
+			}
+		});
+		if (!_is_match_someone) {
+			console.error("找不到任何路由匹配信息", path);
+			res.status(404);
+			resolve();
 		}
 	});
-	if (!_is_match_someone) {
-		console.error("找不到任何路由匹配信息", path);
-		res.status(404);
-		then_fun instanceof Function && then_fun();
-	}
 };
 /*
  * 可处理Promise的emit
@@ -67,9 +69,9 @@ jhs.emit_filter = function(path, req, res, then_fun, catch_fun) {
 jhs.emitPromise = co.wrap(function*(event_name) {
 	const events = jhs._events[event_name];
 	if (events) {
+		const _flag_head = ("[ EMIT:" + event_name + " ]").colorsHead();
+		const _g = console.group(_flag_head);
 		try {
-			const _flag_head = ("[ EMIT:" + event_name + " ]").colorsHead();
-			const _g = console.group(_flag_head);
 			const args = Array.slice(arguments, 1);
 			if (Array.isArray(events)) {
 				yield events.map(handle => handle.apply(this, args));
@@ -132,7 +134,8 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 	/*
 	 * 路由起始点
 	 */
-	jhs.emit_filter(req.decode_pathname, req, res, function() {
+	try {
+		yield jhs.emit_filter(req.decode_pathname, req, res);
 		try {
 			if (res.body instanceof stream) {
 				// 如果HTTP协议，把头文件信息拷贝过来
@@ -149,12 +152,12 @@ jhs.all("*", co.wrap(function*(req, res, next) {
 		} catch (e) {
 			console.flag("QAQ", e);
 		}
-	}, function(err) {
+	} catch (err) {
 		console.flag(502, err, res.body);
 		res.status(502);
 		res.end(err == undefined ? "" : String(err));
 		_groupEnd();
-	});
+	}
 }));
 /*
  * 基础规则监听
@@ -180,9 +183,7 @@ jhs.filter(/^(.*)\/?$/i, function(pathname, params, req, res) { // 没有文件�
 	//处理后的地址再次出发路由，前提是不死循环触发
 	if (!req[$目录型路由锁]) {
 		req[$目录型路由锁] = true;
-		return Promise.try((resolve, reject) => {
-			jhs.emit_filter(res_pathname, req, res, resolve, reject);
-		});
+		return jhs.emit_filter(res_pathname, req, res);
 	}
 });
 //通用文件处理
@@ -199,11 +200,11 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 	const _flag_head = ("[ " + type.placeholder(5) + "]").colorsHead();
 	const _g = console.group(_flag_head, "=>", pathname, "\n\t", "=>", file_paths, res_pathname, "\n");
 
-	const _groupEnd = () => {
+	const _groupEnd = () => jhs.emitPromise(`status:${res.statusCode}`, file_paths, res_pathname, type, pathname, params, req, res).then(() => {
 		res.type(_finally_type);
 		const _end_time = Date.now();
 		console.groupEnd(_g, _flag_head, (_end_time - _start_time) + "ms");
-	};
+	});
 	try {
 
 		//有大量异步操作，所以要把options缓存起来
@@ -218,8 +219,22 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 		if (map_md5 && map_from) {
 			console.flag("TEMP", "get sourceMap file from temp", map_from.green, map_md5);
 			res.body = yield temp.getStream(map_from, map_md5);
-			return _groupEnd();
+			return yield _groupEnd();
 		}
+		/*
+		 * req file info
+		 */
+		var _path_info = path.parse(res_pathname);
+		var _extname = _path_info.ext;
+		var _filename = _path_info.base;
+		var _basename = _path_info.name;
+		res.file_info = {
+			pathname: pathname,
+			res_pathname: res_pathname,
+			filename: _filename,
+			basename: _basename,
+			extname: _extname,
+		};
 		/*
 		 * 404
 		 */
@@ -230,11 +245,11 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 				var _404file_name = jhs_options["404"] || "404.html";
 				if (!(yield fss.existsFileInPathsMutilAsync(file_paths, _404file_name))) {
 					res.body = yield cache.getFileCacheContent(__dirname + "/lib/404.html"); //404 file stream
-					return _groupEnd();
+					return yield _groupEnd();
 				}
 				res_pathname = _404file_name;
 			} else {
-				return _groupEnd();
+				return yield _groupEnd();
 			}
 		} else {
 			res.status(200);
@@ -247,20 +262,8 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 
 		res.body = yield fileInfo.source_stream; // 默认是一个流对象
 
-		if (fileInfo.is_text) {
-			var _path_info = path.parse(res_pathname);
-			var _extname = _path_info.ext;
-			var _filename = _path_info.base;
-			var _basename = _path_info.name;
-			res.is_text = true;
-			res.text_file_info = {
-				pathname: pathname,
-				res_pathname: res_pathname,
-				filename: _filename,
-				basename: _basename,
-				extname: _extname,
-			};
-		}
+		res.is_text = fileInfo.is_text;
+
 		const common_filter_handle_res = (jhs_options.common_filter_handle instanceof Function) && jhs_options.common_filter_handle(pathname, params, req, res);
 		if (common_filter_handle_res instanceof Promise) {
 			yield common_filter_handle_res;
@@ -424,23 +427,26 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			/* LESS编译 */
 			if (_lower_case_extname === ".less" && /css/.test(_lower_case_compile_to)) {
 				if (fileInfo.compile_less_content) {
-					res.body = fileInfo.compile_less_content;
+					res.body = yield fileInfo.compile_less_content();
 				} else {
-					if (_temp_body = yield temp.get("less", fileInfo.source_md5)) {
+					source_md5 || (source_md5 = yield fileInfo.source_md5);
+					if (yield temp.has("less", source_md5)) { // 缓存目录区，顺便引用到内存
 						// console.log("使用缓存，无需编译！！")
-						res.body = fileInfo.compile_less_content = _temp_body.toString(); //Buffer to String
+						res.body = yield(fileInfo.compile_less_content = () => temp.getStream("less", source_md5))();
 					} else {
+						var less_code_str = "" + (yield Promise.readStream(res.body));
 						var less_compile_result = yield Promise.try((resolve, reject) => {
-							less.render(res.body, {
-								paths: [path.parse(fileInfo.filepath).dir],
+							less.render(less_code_str, {
+								paths: file_paths,
 								filename: _filename
 							}, (err, output) => {
 								// console.log("output:::::", output)
 								err ? reject(err) : resolve(output);
 							});
 						});
-						res.body = fileInfo.compile_less_content = less_compile_result.css.toString();
-						temp.set("less", fileInfo.source_md5, res.body);
+						res.body = less_compile_result.css;
+						yield temp.set("less", source_md5, res.body);
+						fileInfo.compile_less_content = () => temp.getStream("less", source_md5);
 					}
 				}
 				_finally_type = "css";
@@ -489,9 +495,9 @@ const _route_to_file = co.wrap(function*(file_paths, res_pathname, type, pathnam
 			}
 		}
 
-		_groupEnd();
+		yield _groupEnd();
 	} catch (e) {
-		_groupEnd();
+		yield _groupEnd();
 		throw e;
 	}
 });
